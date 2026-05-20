@@ -1,0 +1,243 @@
+<div class="flights-background">
+  <nav class="skyways-navbar navbar navbar-expand-lg">
+    <div class="container">
+      <span class="navbar-brand">SkyWays Airlines</span>
+      <div class="d-flex align-items-center">
+        <span class="text-white me-3">
+          Welcome, <strong style="color: #c9a84c">{{ username }}</strong>
+        </span>
+        <button class="btn btn-outline-warning btn-sm me-2"
+                (click)="goToMyBookings()">
+          My Bookings
+        </button>
+        <button class="btn btn-outline-light btn-sm" 
+                (click)="logout()">
+          Logout
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <!-- Hero -->
+    <div class="text-center mb-4">
+      <h1 class="hero-title">Where do you want to fly?</h1>
+    </div>
+
+    <!-- Search Card -->
+    <div class="search-card p-4 mb-4">
+      <h5 style="color: #0a1628; font-weight: 700; 
+                 margin-bottom: 20px;">
+        Search Flights
+      </h5>
+      <div class="row align-items-end">
+
+        <!-- Origin -->
+        <div class="col-md-3 mb-3" style="position: relative;">
+          <label class="form-label fw-bold">From</label>
+          <input type="text" class="form-control"
+                 [(ngModel)]="origin"
+                 (input)="searchOriginAirport()"
+                 placeholder="City or Airport"/>
+          <!-- Dropdown -->
+          <div *ngIf="showOriginDropdown && 
+                      originAirports.length > 0"
+               style="position: absolute; z-index: 1000;
+                      background: white; width: 100%;
+                      border: 1px solid #dee2e6;
+                      border-radius: 8px; 
+                      box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+            <div *ngFor="let airport of originAirports"
+                 (click)="selectOrigin(airport)"
+                 style="padding: 10px 15px; cursor: pointer;
+                        border-bottom: 1px solid #f0f0f0;"
+                 onmouseover="this.style.background='#f8f9fa'"
+                 onmouseout="this.style.background='white'">
+              <strong>{{ airport.name }}</strong>
+              <small class="text-muted d-block">
+                {{ airport.cityName }}, {{ airport.countryName }}
+                ({{ airport.placeType }})
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Destination -->
+        <div class="col-md-3 mb-3" style="position: relative;">
+          <label class="form-label fw-bold">To</label>
+          <input type="text" class="form-control"
+                 [(ngModel)]="destination"
+                 (input)="searchDestinationAirport()"
+                 placeholder="City or Airport"/>
+          <!-- Dropdown -->
+          <div *ngIf="showDestinationDropdown && 
+                      destinationAirports.length > 0"
+               style="position: absolute; z-index: 1000;
+                      background: white; width: 100%;
+                      border: 1px solid #dee2e6;
+                      border-radius: 8px;
+                      box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+            <div *ngFor="let airport of destinationAirports"
+                 (click)="selectDestination(airport)"
+                 style="padding: 10px 15px; cursor: pointer;
+                        border-bottom: 1px solid #f0f0f0;"
+                 onmouseover="this.style.background='#f8f9fa'"
+                 onmouseout="this.style.background='white'">
+              <strong>{{ airport.name }}</strong>
+              <small class="text-muted d-block">
+                {{ airport.cityName }}, {{ airport.countryName }}
+                ({{ airport.placeType }})
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Date -->
+        <div class="col-md-2 mb-3">
+          <label class="form-label fw-bold">Date</label>
+          <input type="date" class="form-control"
+                 [(ngModel)]="travelDate"/>
+        </div>
+
+        <!-- Class -->
+        <div class="col-md-2 mb-3">
+          <label class="form-label fw-bold">Class</label>
+          <select class="form-select" [(ngModel)]="cabinClass">
+            <option value="economy">Economy</option>
+            <option value="premium_economy">Premium Economy</option>
+            <option value="business">Business</option>
+            <option value="first">First Class</option>
+          </select>
+        </div>
+
+        <!-- Search Button -->
+        <div class="col-md-2 mb-3">
+          <label class="form-label fw-bold">Adults</label>
+          <input type="number" class="form-control"
+                 [(ngModel)]="adults" min="1" max="9"/>
+        </div>
+
+      </div>
+
+      <div class="row mt-2">
+        <div class="col-md-12">
+          <button class="btn btn-lg fw-bold me-2"
+                  style="background: linear-gradient(135deg, 
+                         #c9a84c, #f0c060);
+                         color: #0a1628; border: none;"
+                  (click)="onSearch()">
+            Search Flights
+          </button>
+          <button class="btn btn-lg btn-outline-secondary"
+                  (click)="onClear()">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="message" class="alert alert-warning mt-3">
+        {{ message }}
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="text-center mt-4">
+      <div class="spinner-border text-warning" role="status">
+      </div>
+      <p style="color: white; margin-top: 10px;">
+        Searching flights...
+      </p>
+    </div>
+
+    <!-- Results -->
+    <div *ngIf="!isLoading && flights.length > 0">
+      <h5 style="color: white; font-weight: 700; 
+                 margin-bottom: 15px;">
+        Available Flights ({{ flights.length }})
+      </h5>
+      <div class="row">
+        <div class="col-md-6 mb-4" 
+             *ngFor="let flight of flights">
+          <div class="flight-card p-3">
+            <!-- Airline -->
+            <div class="d-flex justify-content-between 
+                        align-items-center mb-3">
+              <div class="d-flex align-items-center">
+                <img *ngIf="flight.legs[0].carriers[0].logoUrl"
+                     [src]="flight.legs[0].carriers[0].logoUrl"
+                     style="width: 30px; height: 30px; 
+                            margin-right: 8px;"
+                     alt="airline logo"/>
+                <span class="flight-number">
+                  {{ flight.legs[0].carriers[0].name }}
+                </span>
+              </div>
+              <span class="price-badge">
+                {{ flight.price.formatted }}
+              </span>
+            </div>
+
+            <!-- Route -->
+            <div class="d-flex justify-content-between 
+                        align-items-center mb-3">
+              <div class="text-center">
+                <h4 style="color: #0a1628; font-weight: 700; 
+                           margin: 0;">
+                  {{ flight.legs[0].origin }}
+                </h4>
+                <small class="text-muted">
+                  {{ flight.legs[0].departure | date:'HH:mm' }}
+                </small>
+              </div>
+              <div class="text-center px-3">
+                <small class="text-muted d-block">
+                  {{ flight.legs[0].durationMinutes }} mins
+                </small>
+                <div style="border-top: 2px dashed #c9a84c; 
+                            position: relative; width: 80px;">
+                  <span style="position: absolute; top: -12px;
+                               left: 50%; 
+                               transform: translateX(-50%);
+                               font-size: 1.2rem;"></span>
+                </div>
+                <small class="text-muted">
+                  {{ flight.legs[0].stopCount === 0 ? 
+                     'Non-stop' : flight.legs[0].stopCount + 
+                     ' stop(s)' }}
+                </small>
+              </div>
+              <div class="text-center">
+                <h4 style="color: #0a1628; font-weight: 700; 
+                           margin: 0;">
+                  {{ flight.legs[0].destination }}
+                </h4>
+                <small class="text-muted">
+                  {{ flight.legs[0].arrival | date:'HH:mm' }}
+                </small>
+              </div>
+            </div>
+
+            <!-- Book Button -->
+            <div class="d-flex justify-content-between 
+                        align-items-center">
+              <small class="text-muted">
+                {{ flight.legs[0].stopCount === 0 ? 
+                   ' Non-stop' : ' ' + 
+                   flight.legs[0].stopCount + ' stop(s)' }}
+              </small>
+              <button class="btn btn-sm fw-bold px-4"
+                      style="background: linear-gradient(135deg, 
+                             #0a1628, #1a2d4f);
+                             color: #c9a84c; border: none; 
+                             border-radius: 20px;"
+                      (click)="onBook(flight)">
+                Book Now →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,179 @@
+<div class="booking-background">
+  <nav class="skyways-navbar navbar">
+    <div class="container">
+      <span class="navbar-brand">SkyWays Airlines</span>
+      <button class="btn btn-outline-warning btn-sm" 
+              (click)="goBack()">
+        Back to Flights
+      </button>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="text-center mb-4">
+          <h2 style="color: #c9a84c; font-weight: 700;">
+            Complete Your Booking
+          </h2>
+        </div>
+
+        <!-- Flight Details -->
+        <div *ngIf="flight" class="search-card p-4 mb-4">
+          <h5 style="color: #0a1628; font-weight: 700;
+                     border-bottom: 2px solid #c9a84c; 
+                     padding-bottom: 10px;">
+            Flight Details
+          </h5>
+          <div class="d-flex justify-content-between 
+                      align-items-center mt-3">
+            <div class="text-center">
+              <h3 style="color: #0a1628; font-weight: 700;">
+                {{ flight.legs[0].origin }}
+              </h3>
+              <small class="text-muted">
+                {{ flight.legs[0].departure | date:'HH:mm' }}
+              </small>
+            </div>
+            <div class="text-center">
+              <div style="font-size: 1.5rem;">
+                <img 
+                  *ngIf="flight.legs[0].carriers[0].logoUrl"
+                  [src]="flight.legs[0].carriers[0].logoUrl"
+                  style="width: 40px; height: 40px;"/>
+              </div>
+              <small class="text-muted">
+                {{ flight.legs[0].carriers[0].name }}
+              </small>
+            </div>
+            <div class="text-center">
+              <h3 style="color: #0a1628; font-weight: 700;">
+                {{ flight.legs[0].destination }}
+              </h3>
+              <small class="text-muted">
+                {{ flight.legs[0].arrival | date:'HH:mm' }}
+              </small>
+            </div>
+          </div>
+          <hr style="border-color: #c9a84c;">
+          <div class="d-flex justify-content-between">
+            <span class="text-muted">Duration:</span>
+            <span style="font-weight: 700;">
+              {{ flight.legs[0].durationMinutes }} mins
+            </span>
+          </div>
+          <div class="d-flex justify-content-between mt-1">
+            <span class="text-muted">Stops:</span>
+            <span style="font-weight: 700;">
+              {{ flight.legs[0].stopCount === 0 ? 
+                 'Non-stop' : flight.legs[0].stopCount + 
+                 ' stop(s)' }}
+            </span>
+          </div>
+          <div class="d-flex justify-content-between mt-1">
+            <span class="text-muted">Base Price:</span>
+            <span style="font-weight: 700; color: #c9a84c;">
+              {{ flight.price.formatted }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Seat Selection -->
+        <div class="search-card p-4 mb-4">
+          <h5 style="color: #0a1628; font-weight: 700;
+                     border-bottom: 2px solid #c9a84c; 
+                     padding-bottom: 10px;">
+            Select Seat Preference
+          </h5>
+          <div class="row mt-3">
+            <div class="col-md-4 mb-2" 
+                 *ngFor="let seat of seatTypes">
+              <div (click)="selectedSeat = seat; calculatePrice()"
+                   [style]="selectedSeat === seat ?
+                    'border: 2px solid #c9a84c; border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: linear-gradient(135deg, #0a1628, #1a2d4f);' :
+                    'border: 2px solid #dee2e6; border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; background: white;'">
+                <div [style]="selectedSeat === seat ? 
+                     'color: #c9a84c; font-weight: 700;' : 
+                     'color: #0a1628; font-weight: 700;'">
+                  {{ seat }}
+                </div>
+                <small [style]="selectedSeat === seat ? 
+                       'color: rgba(255,255,255,0.7);' : 
+                       'color: #6c757d;'">
+                  {{ seat === 'MIDDLE' ? 'No extra charge' : 
+                     seat === 'AISLE' ? '+INR 500' : '+INR 1000' }}
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Passenger Details -->
+        <div class="search-card p-4">
+          <h5 style="color: #0a1628; font-weight: 700;
+                     border-bottom: 2px solid #c9a84c; 
+                     padding-bottom: 10px;">
+            Passenger Details
+          </h5>
+
+          <div *ngIf="message"
+               [class]="isError ? 'alert alert-danger mt-3' : 
+                        'alert alert-success mt-3'">
+            {{ message }}
+          </div>
+
+          <div class="mt-3">
+            <div class="mb-3">
+              <label class="form-label fw-bold">
+                Passenger Name
+              </label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="booking.username" readonly
+                     style="background: #f8f9fa;"/>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">
+                Travel Date
+              </label>
+              <input type="date" class="form-control"
+                     [(ngModel)]="booking.bookingDate"/>
+            </div>
+
+            <!-- Price Breakdown -->
+            <div class="p-3 mb-3"
+                 style="background: #f8f9fa; border-radius: 8px;
+                        border-left: 4px solid #c9a84c;">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted">Base Price:</span>
+                <span>INR {{ basePrice }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted">
+                  Seat ({{ selectedSeat }}):
+                </span>
+                <span>+INR {{ seatCharges[selectedSeat] }}</span>
+              </div>
+              <hr style="border-color: #c9a84c;">
+              <div class="d-flex justify-content-between">
+                <span style="font-weight: 700; color: #0a1628;">
+                  Total Amount:
+                </span>
+                <span style="font-weight: 700; color: #c9a84c;
+                             font-size: 1.3rem;">
+                  INR {{ totalPrice }}
+                </span>
+              </div>
+            </div>
+
+            <button class="btn-gold"
+                    (click)="onBook()"
+                    [disabled]="isSuccess">
+              {{ isSuccess ? 'Redirecting to Payment...' :
+                 'CONFIRM AND PROCEED TO PAYMENT' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

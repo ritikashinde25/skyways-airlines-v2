@@ -1,0 +1,127 @@
+<div class="confirmation-background">
+  <nav class="skyways-navbar navbar">
+    <div class="container">
+      <span class="navbar-brand">SkyWays Airlines</span>
+      <div class="d-flex align-items-center">
+        <span class="text-white me-3">
+          Welcome, <strong style="color: #c9a84c">{{ username }}</strong>
+        </span>
+        <button class="btn btn-outline-warning btn-sm" (click)="logout()">
+          Logout
+        </button>
+      </div>
+    </div>
+  </nav>
+ 
+  <div class="container mt-4">
+    <div class="row justify-content-center">
+      <div class="col-md-7">
+ 
+        <!-- Success Header -->
+        <div class="text-center mb-4">
+          <div style="font-size: 4rem;"></div>
+          <h2 style="color: #c9a84c; font-weight: 700;">
+            Booking Confirmed!
+          </h2>
+          <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem;">
+            Thank you for choosing SkyWays Airlines
+          </p>
+        </div>
+ 
+        <!-- Ticket Card -->
+        <div *ngIf="booking" class="ticket-card mb-4">
+          <div class="ticket-header">
+            <h4 style="margin: 0; letter-spacing: 2px;">BOARDING PASS</h4>
+            <small style="color: rgba(201,168,76,0.8);">SkyWays Airlines</small>
+          </div>
+ 
+          <div class="p-4">
+            <!-- Flight Route -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="text-center">
+                <h2 style="color: #0a1628; font-weight: 800; margin: 0;">
+                  {{ booking.origin }}
+                </h2>
+                <small class="text-muted">Origin</small>
+              </div>
+              <div class="text-center px-3">
+                <div style="border-top: 2px dashed #c9a84c;
+                            position: relative; width: 100px;">
+                  <span style="position: absolute; top: -14px;
+                               left: 50%; transform: translateX(-50%);
+                               font-size: 1.5rem;"></span>
+                </div>
+              </div>
+              <div class="text-center">
+                <h2 style="color: #0a1628; font-weight: 800; margin: 0;">
+                  {{ booking.destination }}
+                </h2>
+                <small class="text-muted">Destination</small>
+              </div>
+            </div>
+ 
+            <hr class="ticket-divider">
+ 
+            <!-- Booking Details -->
+            <div class="row">
+              <div class="col-6 mb-3">
+                <small class="text-muted d-block">BOOKING ID</small>
+                <span style="font-weight: 700; color: #0a1628;">
+                  {{ booking.id }}
+                </span>
+              </div>
+              <div class="col-6 mb-3">
+                <small class="text-muted d-block">FLIGHT</small>
+                <span style="font-weight: 700; color: #0a1628;">
+                  {{ booking.flightNumber }}
+                </span>
+              </div>
+              <div class="col-6 mb-3">
+                <small class="text-muted d-block">PASSENGER</small>
+                <span style="font-weight: 700; color: #0a1628;">
+                  {{ booking.username }}
+                </span>
+              </div>
+              <div class="col-6 mb-3">
+                <small class="text-muted d-block">DATE</small>
+                <span style="font-weight: 700; color: #0a1628;">
+                  {{ booking.bookingDate }}
+                </span>
+              </div>
+              <div class="col-6 mb-3">
+                <small class="text-muted d-block">STATUS</small>
+                <span style="font-weight: 700; color: green;">
+                  {{ booking.status }}
+                </span>
+              </div>
+              <div class="col-6 mb-3">
+                <small class="text-muted d-block">AMOUNT PAID</small>
+                <span style="font-weight: 700; color: #c9a84c;
+                             font-size: 1.2rem;">
+                  ₹{{ booking.totalPrice }}
+                </span>
+              </div>
+            </div>
+ 
+            <hr class="ticket-divider">
+ 
+            <div class="text-center">
+              <small class="text-muted">
+                A confirmation has been sent to your registered email
+              </small>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Action Button -->
+        <div class="text-center">
+          <button class="btn-gold" style="max-width: 300px;"
+                  (click)="goToFlights()">
+            Search More Flights
+          </button>
+        </div>
+ 
+      </div>
+    </div>
+  </div>
+</div>
