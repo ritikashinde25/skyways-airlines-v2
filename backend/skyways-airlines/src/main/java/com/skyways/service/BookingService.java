@@ -7,6 +7,7 @@ import com.skyways.enums.BookingStatus;
 import com.skyways.enums.FlightClass;
 import com.skyways.enums.SeatType;
 import com.skyways.exception.ResourceNotFoundException;
+import com.skyways.mapper.BookingMapper;
 import com.skyways.repository.BookingRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -22,9 +23,10 @@ public class BookingService {
         LoggerFactory.getLogger(BookingService.class);
 
     private final BookingRepository bookingRepository;
+    private final BookingMapper bookingMapper;
 
     public Booking createBooking(BookingDTO bookingDTO) {
-        logger.info("Creating booking for user: {}", 
+        logger.info("Creating booking for user: {}",
             bookingDTO.getUsername());
 
         Booking booking = Booking.builder()
@@ -38,7 +40,7 @@ public class BookingService {
                 .status(BookingStatus.CONFIRMED)
                 .travelClass(bookingDTO.getTravelClass() != null ?
                     FlightClass.valueOf(bookingDTO.getTravelClass()
-                        .replace(" ", "_").toUpperCase()) : 
+                        .replace(" ", "_").toUpperCase()) :
                     FlightClass.ECONOMY)
                 .seatType(bookingDTO.getSeatType() != null ?
                     SeatType.valueOf(bookingDTO.getSeatType()
@@ -77,5 +79,11 @@ public class BookingService {
         bookingRepository.save(booking);
         logger.info("Booking cancelled: {}", id);
         return AppConstants.SUCCESS_CANCEL;
+    }
+
+    public BookingDTO getBookingDTOById(Long id) {
+        logger.info("Fetching booking DTO with ID: {}", id);
+        Booking booking = getBookingById(id);
+        return bookingMapper.toDTO(booking);
     }
 }
