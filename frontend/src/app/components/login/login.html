@@ -1,0 +1,34 @@
+<div class="auth-background">
+  <div class="auth-card">
+    <div class="auth-card-header">
+      <h2>SkyWays</h2>
+      <p>Airlines — Login to your account</p>
+    </div>
+    <div class="auth-card-body">
+      <div *ngIf="message"
+           [class]="isError ? 'alert alert-danger' : 'alert alert-success'">
+        {{ message }}
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Username</label>
+        <input type="text" class="form-control"
+               [(ngModel)]="user.username"
+               placeholder="Enter your username"/>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Password</label>
+        <input type="password" class="form-control"
+               [(ngModel)]="user.password"
+               placeholder="Enter your password"/>
+      </div>
+      <button class="btn-gold mb-3" (click)="onLogin()">
+        LOGIN
+      </button>
+      <div class="text-center">
+        <span class="text-muted">Don't have an account? </span>
+        <a routerLink="/register">Register here</a>
+      </div>
+    </div>
+  </div>
+</div>
+ 
