@@ -1,8 +1,7 @@
 # Sensitive files
 backend/skyways-airlines/src/main/resources/application.yml
-backend/skyways-airlines/src/main/resources/application.properties
+
 frontend/src/environments/environment.ts
-frontend/src/environments/environment.prod.ts
 
 # Build folders
 node_modules/
