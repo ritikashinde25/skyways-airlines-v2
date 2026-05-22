@@ -3,12 +3,15 @@ package com.skyways.service;
 import com.skyways.constants.AppConstants;
 import com.skyways.dto.BookingDTO;
 import com.skyways.entity.Booking;
+import com.skyways.entity.Payment;
 import com.skyways.enums.BookingStatus;
 import com.skyways.enums.FlightClass;
 import com.skyways.enums.SeatType;
 import com.skyways.exception.ResourceNotFoundException;
 import com.skyways.mapper.BookingMapper;
 import com.skyways.repository.BookingRepository;
+import com.skyways.repository.PaymentRepository;
+import com.skyways.service.StripeService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +31,8 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
+    private final PaymentRepository paymentRepository;
+    private final StripeService stripeService;
 
     public Booking createBooking(BookingDTO bookingDTO) {
         logger.info("Creating booking for user: {}",
@@ -106,8 +111,29 @@ public class BookingService {
 
         double refundAmount = booking.getTotalPrice() *
             refundPercentage / 100;
-        double deductionAmount = booking.getTotalPrice() - 
+        double deductionAmount = booking.getTotalPrice() -
             refundAmount;
+
+        // Process Stripe refund if refund amount > 0
+        boolean stripeRefundProcessed = false;
+        if (refundAmount > 0) {
+            List<Payment> payments = paymentRepository
+                .findByBookingId(booking.getId());
+            if (!payments.isEmpty()) {
+                Payment payment = payments.get(0);
+                if (payment.getStripePaymentIntentId() != null) {
+                    Map<String, Object> stripeResponse =
+                        stripeService.refundPayment(
+                            payment.getStripePaymentIntentId(),
+                            (long) refundAmount);
+                    stripeRefundProcessed = 
+                        (boolean) stripeResponse
+                            .getOrDefault("success", false);
+                    logger.info("Stripe refund processed: {}",
+                        stripeRefundProcessed);
+                }
+            }
+        }
 
         // Update booking status
         booking.setStatus(BookingStatus.CANCELLED);
@@ -118,8 +144,7 @@ public class BookingService {
 
         // Build response
         Map<String, Object> response = new HashMap<>();
-        response.put("message", 
-            "Booking cancelled successfully!");
+        response.put("message", "Booking cancelled successfully!");
         response.put("bookingId", id);
         response.put("totalPaid", booking.getTotalPrice());
         response.put("refundPercentage", refundPercentage);
@@ -127,6 +152,8 @@ public class BookingService {
         response.put("deductionAmount", deductionAmount);
         response.put("refundMessage", refundMessage);
         response.put("daysUntilTravel", daysUntilTravel);
+        response.put("stripeRefundProcessed", 
+            stripeRefundProcessed);
 
         return response;
     }

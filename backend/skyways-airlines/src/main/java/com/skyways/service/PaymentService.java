@@ -28,14 +28,16 @@ public class PaymentService {
             paymentDTO.getBookingId());
 
         Payment payment = Payment.builder()
-                .bookingId(paymentDTO.getBookingId())
-                .username(paymentDTO.getUsername())
-                .amount(paymentDTO.getAmount())
-                .paymentMethod(paymentDTO.getPaymentMethod())
-                .status(PaymentStatus.SUCCESS)
-                .transactionId(UUID.randomUUID().toString())
-                .paymentDate(LocalDate.now().toString())
-                .build();
+            .bookingId(paymentDTO.getBookingId())
+            .username(paymentDTO.getUsername())
+            .amount(paymentDTO.getAmount())
+            .paymentMethod(paymentDTO.getPaymentMethod())
+            .status(PaymentStatus.SUCCESS)
+            .transactionId(UUID.randomUUID().toString())
+            .paymentDate(LocalDate.now().toString())
+            .stripePaymentIntentId(
+                paymentDTO.getStripePaymentIntentId())
+            .build();
 
         Payment saved = paymentRepository.save(payment);
         logger.info("Payment processed with ID: {}", saved.getId());

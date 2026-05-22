@@ -40,4 +40,8 @@ public class Payment {
 
     @Column(nullable = false)
     private String paymentDate;
+
+    @Column
+    private String stripePaymentIntentId;
+
 }

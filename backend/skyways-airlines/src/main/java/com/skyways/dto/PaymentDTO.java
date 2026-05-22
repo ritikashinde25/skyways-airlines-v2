@@ -24,4 +24,6 @@ public class PaymentDTO {
 
     @NotBlank(message = "Payment method is required")
     private String paymentMethod;
+
+    private String stripePaymentIntentId;
 }

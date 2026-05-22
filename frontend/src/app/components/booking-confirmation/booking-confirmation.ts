@@ -42,5 +42,9 @@ export class BookingConfirmationComponent implements OnInit {
     localStorage.removeItem('username');
     this.router.navigate(['/login']);
   }
+
+  goToMyBookings() {
+    this.router.navigate(['/my-bookings']);
+  }
 }
  
