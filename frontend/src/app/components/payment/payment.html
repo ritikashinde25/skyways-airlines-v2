@@ -1,0 +1,127 @@
+<div class="payment-background">
+  <nav class="skyways-navbar navbar">
+    <div class="container">
+      <span class="navbar-brand">SkyWays Airlines</span>
+      <button class="btn btn-outline-warning btn-sm"
+              (click)="goBack()">
+        Back
+      </button>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="text-center mb-4">
+          <h2 style="color: #c9a84c; font-weight: 700;">
+            Secure Payment
+          </h2>
+          <p style="color: rgba(255,255,255,0.8);">
+            Booking ID: {{ bookingId }}
+          </p>
+        </div>
+
+        <div class="search-card p-4">
+          <div *ngIf="message"
+               [class]="isError ? 'alert alert-danger' :
+                        isSuccess ? 'alert alert-success' :
+                        'alert alert-info'">
+            {{ message }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">
+              Payment Method
+            </label>
+            <select class="form-select"
+                    [(ngModel)]="payment.paymentMethod"
+                    (ngModelChange)="onMethodChange()">
+              <option value="CREDIT_CARD">Credit Card</option>
+              <option value="DEBIT_CARD">Debit Card</option>
+              <option value="NET_BANKING">Net Banking</option>
+              <option value="UPI">UPI</option>
+            </select>
+          </div>
+
+          <!-- Stripe Card Element -->
+          <div *ngIf="payment.paymentMethod === 'CREDIT_CARD' ||
+                      payment.paymentMethod === 'DEBIT_CARD'">
+            <div class="mb-3">
+              <label class="form-label fw-bold">
+                Card Details
+              </label>
+              <div id="card-element"
+                   style="padding: 12px; border: 1px solid #ced4da;
+                          border-radius: 8px; background: white;">
+              </div>
+              <small class="text-muted mt-1 d-block">
+                Test card: 4242 4242 4242 4242 | 
+                Expiry: 12/34 | CVV: 123
+              </small>
+            </div>
+          </div>
+
+          <!-- Net Banking -->
+          <div *ngIf="payment.paymentMethod === 'NET_BANKING'">
+            <div class="mb-3">
+              <label class="form-label fw-bold">
+                Select Bank
+              </label>
+              <select class="form-select"
+                      [(ngModel)]="cardNumber">
+                <option value="SBI">
+                  State Bank of India
+                </option>
+                <option value="HDFC">HDFC Bank</option>
+                <option value="ICICI">ICICI Bank</option>
+                <option value="AXIS">Axis Bank</option>
+                <option value="KOTAK">Kotak Bank</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">User ID</label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="cardHolder"
+                     placeholder="Enter Net Banking User ID"/>
+            </div>
+          </div>
+
+          <!-- UPI -->
+          <div *ngIf="payment.paymentMethod === 'UPI'">
+            <div class="mb-3">
+              <label class="form-label fw-bold">UPI ID</label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="cardNumber"
+                     placeholder="yourname@upi"/>
+            </div>
+          </div>
+
+          <!-- Amount -->
+          <div class="mb-4 p-3"
+               style="background: #f8f9fa; border-radius: 8px;
+                      border-left: 4px solid #c9a84c;">
+            <div class="d-flex justify-content-between">
+              <span class="fw-bold">Total Amount:</span>
+              <span style="color: #0a1628; font-weight: 700;
+                           font-size: 1.3rem;">
+                INR {{ payment.amount || 0 }}
+              </span>
+            </div>
+          </div>
+
+          <button class="btn-gold"
+                  (click)="onPayment()"
+                  [disabled]="isProcessing || isSuccess">
+            {{ isProcessing ? 'Processing...' : 'PAY SECURELY' }}
+          </button>
+
+          <div class="text-center mt-3">
+            <small class="text-muted">
+              Your payment is secured with 256-bit SSL encryption
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

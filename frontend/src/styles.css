@@ -1,0 +1,246 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+ 
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+ 
+/* Navy Blue and Gold Theme */
+:root {
+  --navy: #0a1628;
+  --navy-light: #1a2d4f;
+  --gold: #c9a84c;
+  --gold-light: #f0c060;
+  --white: #ffffff;
+  --light-gray: #f8f9fa;
+}
+ 
+/* Login/Register Background */
+.auth-background {
+  min-height: 100vh;
+  background: linear-gradient(rgba(10, 22, 40, 0.35),
+              rgba(10, 22, 40, 0.35)),
+              url('/airplane3.jpg') center/cover no-repeat fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+ 
+.auth-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  width: 100%;
+  max-width: 420px;
+}
+ 
+.auth-card-header {
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  padding: 30px;
+  text-align: center;
+  border-bottom: 3px solid var(--gold);
+}
+ 
+.auth-card-header h2 {
+  color: var(--gold);
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+ 
+.auth-card-header p {
+  color: rgba(255,255,255,0.8);
+  margin: 0;
+}
+ 
+.auth-card-body {
+  padding: 30px;
+}
+ 
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: var(--navy);
+  font-weight: 700;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  width: 100%;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: block;
+}
+ 
+.btn-gold:hover {
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(201, 168, 76, 0.4);
+}
+ 
+.btn-gold:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+ 
+/* Navbar Styling */
+.skyways-navbar {
+  background: linear-gradient(135deg, var(--navy), var(--navy-light)) !important;
+  border-bottom: 3px solid var(--gold);
+  padding: 12px 0;
+}
+ 
+.skyways-navbar .navbar-brand {
+  color: var(--gold) !important;
+  font-weight: 700;
+  font-size: 1.4rem;
+  letter-spacing: 1px;
+}
+ 
+/* Flight Search Background */
+.flights-background {
+  min-height: 100vh;
+  background: linear-gradient(rgba(10, 22, 40, 0.35),
+              rgba(10, 22, 40, 0.35)),
+              url('/airplane2.jpg') center/cover no-repeat fixed;
+}
+ 
+.search-card {
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  border-top: 4px solid var(--gold);
+}
+ 
+.flight-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  border-left: 4px solid var(--gold);
+  transition: all 0.3s ease;
+}
+ 
+.flight-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+}
+ 
+.flight-number {
+  color: var(--navy);
+  font-weight: 700;
+}
+ 
+.price-badge {
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: var(--navy);
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 1rem;
+}
+ 
+/* Booking Background */
+.booking-background {
+  min-height: 100vh;
+  background: linear-gradient(rgba(10, 22, 40, 0.85),
+              rgba(10, 22, 40, 0.85)),
+              url('/airplane2.jpg') center/cover no-repeat fixed;
+}
+ 
+/* Payment Background */
+.payment-background {
+  min-height: 100vh;
+  background: linear-gradient(rgba(10, 22, 40, 0.85),
+              rgba(10, 22, 40, 0.85)),
+              url('/airplane2.jpg') center/cover no-repeat fixed;
+}
+ 
+/* Confirmation Background */
+.confirmation-background {
+  min-height: 100vh;
+  background: linear-gradient(rgba(10, 22, 40, 0.85),
+              rgba(10, 22, 40, 0.85)),
+              url('/airplane2.jpg') center/cover no-repeat fixed;
+}
+ 
+.ticket-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+ 
+.ticket-header {
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  border-bottom: 4px solid var(--gold);
+  padding: 20px;
+  text-align: center;
+  color: var(--gold);
+}
+ 
+.ticket-divider {
+  border: none;
+  border-top: 2px dashed #ccc;
+  margin: 15px 0;
+}
+ 
+/* Form Styling */
+.form-control:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 0.2rem rgba(201, 168, 76, 0.25);
+}
+ 
+.form-select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 0.2rem rgba(201, 168, 76, 0.25);
+}
+ 
+/* Links */
+a {
+  color: var(--gold);
+  text-decoration: none;
+}
+ 
+a:hover {
+  color: var(--gold-light);
+}
+ 
+/* Hero Section */
+.hero-title {
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 2.5rem;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+ 
+.hero-subtitle {
+  color: rgba(255,255,255,0.85);
+  font-size: 1.1rem;
+}
+ 
+/* Section titles */
+.section-title {
+  color: white;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+ 
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+ 
+::-webkit-scrollbar-track {
+  background: var(--navy);
+}
+ 
+::-webkit-scrollbar-thumb {
+  background: var(--gold);
+  border-radius: 4px;
+}
+ 
