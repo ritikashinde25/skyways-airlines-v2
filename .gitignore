@@ -6,4 +6,4 @@ frontend/src/environments/environment.ts
 # Build folders
 node_modules/
 target/
-.angular/
+.angular/backend/skyways-airlines/src/main/resources/application.properties
