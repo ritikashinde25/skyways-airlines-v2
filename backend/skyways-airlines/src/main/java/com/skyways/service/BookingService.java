@@ -7,11 +7,13 @@ import com.skyways.enums.BookingStatus;
 import com.skyways.enums.FlightClass;
 import com.skyways.enums.SeatType;
 import com.skyways.exception.ResourceNotFoundException;
+import com.skyways.mapper.BookingMapper;
 import com.skyways.repository.BookingRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -26,9 +28,10 @@ public class BookingService {
         LoggerFactory.getLogger(BookingService.class);
 
     private final BookingRepository bookingRepository;
+    private final BookingMapper bookingMapper; // ✅ keep mapper
 
     public Booking createBooking(BookingDTO bookingDTO) {
-        logger.info("Creating booking for user: {}", 
+        logger.info("Creating booking for user: {}",
             bookingDTO.getUsername());
 
         Booking booking = Booking.builder()
@@ -42,7 +45,7 @@ public class BookingService {
                 .status(BookingStatus.CONFIRMED)
                 .travelClass(bookingDTO.getTravelClass() != null ?
                     FlightClass.valueOf(bookingDTO.getTravelClass()
-                        .replace(" ", "_").toUpperCase()) : 
+                        .replace(" ", "_").toUpperCase()) :
                     FlightClass.ECONOMY)
                 .seatType(bookingDTO.getSeatType() != null ?
                     SeatType.valueOf(bookingDTO.getSeatType()
@@ -116,8 +119,7 @@ public class BookingService {
 
         // Build response
         Map<String, Object> response = new HashMap<>();
-        response.put("message", 
-            "Booking cancelled successfully!");
+        response.put("message", "Booking cancelled successfully!");
         response.put("bookingId", id);
         response.put("totalPaid", booking.getTotalPrice());
         response.put("refundPercentage", refundPercentage);
@@ -127,5 +129,11 @@ public class BookingService {
         response.put("daysUntilTravel", daysUntilTravel);
 
         return response;
+    }
+
+    public BookingDTO getBookingDTOById(Long id) {
+        logger.info("Fetching booking DTO with ID: {}", id);
+        Booking booking = getBookingById(id);
+        return bookingMapper.toDTO(booking);
     }
 }
