@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -60,7 +61,7 @@ public class BookingController {
     }
 
     @PutMapping("/cancel/{id}")
-    public ResponseEntity<String> cancelBooking(
+    public ResponseEntity<Map<String, Object>> cancelBooking(
             @PathVariable Long id) {
         logger.info("Cancel booking: {}", id);
         return ResponseEntity.ok(bookingService.cancelBooking(id));

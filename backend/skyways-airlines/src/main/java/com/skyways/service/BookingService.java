@@ -12,7 +12,11 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -70,12 +74,58 @@ public class BookingService {
             });
     }
 
-    public String cancelBooking(Long id) {
+    public Map<String, Object> cancelBooking(Long id) {
         logger.info("Cancelling booking: {}", id);
         Booking booking = getBookingById(id);
+
+        // Calculate refund based on travel date
+        LocalDate travelDate = LocalDate.parse(
+            booking.getBookingDate());
+        LocalDate today = LocalDate.now();
+        long daysUntilTravel = ChronoUnit.DAYS.between(
+            today, travelDate);
+
+        double refundPercentage;
+        String refundMessage;
+
+        if (daysUntilTravel >= 7) {
+            refundPercentage = 100.0;
+            refundMessage = "Full refund of 100%";
+        } else if (daysUntilTravel >= 3) {
+            refundPercentage = 75.0;
+            refundMessage = "Partial refund of 75%";
+        } else if (daysUntilTravel >= 1) {
+            refundPercentage = 50.0;
+            refundMessage = "Partial refund of 50%";
+        } else {
+            refundPercentage = 0.0;
+            refundMessage = "No refund for same day cancellation";
+        }
+
+        double refundAmount = booking.getTotalPrice() *
+            refundPercentage / 100;
+        double deductionAmount = booking.getTotalPrice() - 
+            refundAmount;
+
+        // Update booking status
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
-        logger.info("Booking cancelled: {}", id);
-        return AppConstants.SUCCESS_CANCEL;
+
+        logger.info("Booking cancelled: {}, Refund: {}%",
+            id, refundPercentage);
+
+        // Build response
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", 
+            "Booking cancelled successfully!");
+        response.put("bookingId", id);
+        response.put("totalPaid", booking.getTotalPrice());
+        response.put("refundPercentage", refundPercentage);
+        response.put("refundAmount", refundAmount);
+        response.put("deductionAmount", deductionAmount);
+        response.put("refundMessage", refundMessage);
+        response.put("daysUntilTravel", daysUntilTravel);
+
+        return response;
     }
 }
