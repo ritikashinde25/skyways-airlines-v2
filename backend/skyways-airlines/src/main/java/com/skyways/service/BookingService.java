@@ -8,6 +8,7 @@ import com.skyways.enums.BookingStatus;
 import com.skyways.enums.FlightClass;
 import com.skyways.enums.SeatType;
 import com.skyways.exception.ResourceNotFoundException;
+import com.skyways.kafka.BookingEventProducer;
 import com.skyways.mapper.BookingMapper;
 import com.skyways.repository.BookingRepository;
 import com.skyways.repository.PaymentRepository;
@@ -32,6 +33,7 @@ public class BookingService {
     private final BookingMapper bookingMapper;
     private final PaymentRepository paymentRepository;
     private final StripeService stripeService;
+    private final BookingEventProducer bookingEventProducer;
 
     public Booking createBooking(BookingDTO bookingDTO) {
         logger.info("Creating booking for user: {}",
@@ -57,6 +59,16 @@ public class BookingService {
 
         Booking saved = bookingRepository.save(booking);
         logger.info("Booking created with ID: {}", saved.getId());
+
+        // Publish Kafka event
+        String event = "BOOKING_CREATED|" + saved.getId() +
+            "|" + saved.getUsername() +
+            "|" + saved.getFlightNumber() +
+            "|" + saved.getOrigin() +
+            "|" + saved.getDestination() +
+            "|" + saved.getTotalPrice();
+        bookingEventProducer.sendBookingEvent(event);
+
         return saved;
     }
 

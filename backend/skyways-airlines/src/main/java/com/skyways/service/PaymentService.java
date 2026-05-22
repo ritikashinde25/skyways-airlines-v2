@@ -5,6 +5,7 @@ import com.skyways.dto.PaymentDTO;
 import com.skyways.entity.Payment;
 import com.skyways.enums.PaymentStatus;
 import com.skyways.exception.ResourceNotFoundException;
+import com.skyways.kafka.PaymentEventProducer;
 import com.skyways.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -22,25 +23,35 @@ public class PaymentService {
         LoggerFactory.getLogger(PaymentService.class);
 
     private final PaymentRepository paymentRepository;
+    private final PaymentEventProducer paymentEventProducer;
 
     public Payment processPayment(PaymentDTO paymentDTO) {
-        logger.info("Processing payment for booking: {}", 
+        logger.info("Processing payment for booking: {}",
             paymentDTO.getBookingId());
 
         Payment payment = Payment.builder()
-            .bookingId(paymentDTO.getBookingId())
-            .username(paymentDTO.getUsername())
-            .amount(paymentDTO.getAmount())
-            .paymentMethod(paymentDTO.getPaymentMethod())
-            .status(PaymentStatus.SUCCESS)
-            .transactionId(UUID.randomUUID().toString())
-            .paymentDate(LocalDate.now().toString())
-            .stripePaymentIntentId(
-                paymentDTO.getStripePaymentIntentId())
-            .build();
+                .bookingId(paymentDTO.getBookingId())
+                .username(paymentDTO.getUsername())
+                .amount(paymentDTO.getAmount())
+                .paymentMethod(paymentDTO.getPaymentMethod())
+                .status(PaymentStatus.SUCCESS)
+                .transactionId(UUID.randomUUID().toString())
+                .paymentDate(LocalDate.now().toString())
+                .stripePaymentIntentId(
+                    paymentDTO.getStripePaymentIntentId())
+                .build();
 
         Payment saved = paymentRepository.save(payment);
         logger.info("Payment processed with ID: {}", saved.getId());
+
+        // Publish Kafka event
+        String event = "PAYMENT_PROCESSED|" + saved.getId() +
+            "|" + saved.getBookingId() +
+            "|" + saved.getUsername() +
+            "|" + saved.getAmount() +
+            "|" + saved.getTransactionId();
+        paymentEventProducer.sendPaymentEvent(event);
+
         return saved;
     }
 
