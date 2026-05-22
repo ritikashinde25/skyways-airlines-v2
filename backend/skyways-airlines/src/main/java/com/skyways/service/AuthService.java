@@ -49,11 +49,11 @@ public class AuthService {
         }
 
         User user = User.builder()
-            .username(userDTO.getUsername())
-            .email(userDTO.getEmail())
-            .password(userDTO.getPassword())
-            .role("USER")
-            .build();
+                .username(userDTO.getUsername())
+                .email(userDTO.getEmail())
+                .password(userDTO.getPassword())
+                .role("USER")
+                .build();
 
         userRepository.save(user);
         logger.info("User registered successfully: {}", 

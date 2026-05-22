@@ -11,7 +11,6 @@ import com.skyways.exception.ResourceNotFoundException;
 import com.skyways.mapper.BookingMapper;
 import com.skyways.repository.BookingRepository;
 import com.skyways.repository.PaymentRepository;
-import com.skyways.service.StripeService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,7 +84,6 @@ public class BookingService {
         logger.info("Cancelling booking: {}", id);
         Booking booking = getBookingById(id);
 
-        // Calculate refund based on travel date
         LocalDate travelDate = LocalDate.parse(
             booking.getBookingDate());
         LocalDate today = LocalDate.now();
@@ -114,7 +112,6 @@ public class BookingService {
         double deductionAmount = booking.getTotalPrice() -
             refundAmount;
 
-        // Process Stripe refund if refund amount > 0
         boolean stripeRefundProcessed = false;
         if (refundAmount > 0) {
             List<Payment> payments = paymentRepository
@@ -126,7 +123,7 @@ public class BookingService {
                         stripeService.refundPayment(
                             payment.getStripePaymentIntentId(),
                             (long) refundAmount);
-                    stripeRefundProcessed = 
+                    stripeRefundProcessed =
                         (boolean) stripeResponse
                             .getOrDefault("success", false);
                     logger.info("Stripe refund processed: {}",
@@ -135,14 +132,12 @@ public class BookingService {
             }
         }
 
-        // Update booking status
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
 
         logger.info("Booking cancelled: {}, Refund: {}%",
             id, refundPercentage);
 
-        // Build response
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Booking cancelled successfully!");
         response.put("bookingId", id);
@@ -152,7 +147,7 @@ public class BookingService {
         response.put("deductionAmount", deductionAmount);
         response.put("refundMessage", refundMessage);
         response.put("daysUntilTravel", daysUntilTravel);
-        response.put("stripeRefundProcessed", 
+        response.put("stripeRefundProcessed",
             stripeRefundProcessed);
 
         return response;

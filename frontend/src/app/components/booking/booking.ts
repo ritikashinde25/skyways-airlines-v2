@@ -26,7 +26,7 @@ export class BookingComponent implements OnInit {
     destination: '',
     bookingDate: '',
     totalPrice: 0,
-    travelClass: 'ECONOMY',
+    travelClass: '',
     seatType: ''
   };
 
@@ -49,18 +49,19 @@ export class BookingComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    // Get flight from localStorage (set by flight search page)
     const flightData = localStorage.getItem('selectedFlight');
     if (flightData) {
       this.flight = JSON.parse(flightData);
       this.basePrice = this.flight.price.amount;
       this.booking.flightId = this.flight.id;
-      this.booking.flightNumber =
+      this.booking.flightNumber = 
         this.flight.legs[0].carriers[0].name;
       this.booking.origin = this.flight.legs[0].origin;
       this.booking.destination = this.flight.legs[0].destination;
-      const travelDate = localStorage.getItem('travelDate');
-      this.booking.bookingDate = travelDate ||
-        new Date().toISOString().split('T')[0];
+      this.booking.bookingDate = new Date()
+        .toISOString().split('T')[0];
+      this.booking.travelClass = 'ECONOMY';
       this.calculatePrice();
     } else {
       this.message = 'No flight selected!';
@@ -69,32 +70,32 @@ export class BookingComponent implements OnInit {
   }
 
   calculatePrice() {
-    this.totalPrice = this.basePrice +
+    this.totalPrice = this.basePrice + 
       this.seatCharges[this.selectedSeat];
     this.booking.totalPrice = this.totalPrice;
     this.booking.seatType = this.selectedSeat;
   }
 
   onBook() {
-    this.bookingService.createBooking(this.booking).subscribe({
-      next: (response) => {
-        this.message = 'Booking created! Redirecting to payment...';
-        this.isError = false;
-        this.isSuccess = true;
-        // Save amount for payment page
-        localStorage.setItem('bookingAmount',
-          JSON.stringify(this.totalPrice));
-        localStorage.removeItem('selectedFlight');
-        setTimeout(() => {
-          this.router.navigate(['/payment', response.id]);
-        }, 1000);
-      },
-      error: () => {
-        this.message = 'Booking failed. Please try again!';
-        this.isError = true;
-      }
-    });
-  }
+  this.bookingService.createBooking(this.booking).subscribe({
+    next: (response) => {
+      this.message = 'Booking created! Redirecting to payment...';
+      this.isError = false;
+      this.isSuccess = true;
+      // Save amount for payment page
+      localStorage.setItem('bookingAmount', 
+        JSON.stringify(this.totalPrice));
+      localStorage.removeItem('selectedFlight');
+      setTimeout(() => {
+        this.router.navigate(['/payment', response.id]);
+      }, 1000);
+    },
+    error: () => {
+      this.message = 'Booking failed. Please try again!';
+      this.isError = true;
+    }
+  });
+}
 
   goBack() {
     this.router.navigate(['/flights']);

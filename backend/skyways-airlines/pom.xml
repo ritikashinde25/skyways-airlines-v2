@@ -129,6 +129,14 @@
             <artifactId>stripe-java</artifactId>
             <version>23.3.0</version>
         </dependency>
+
+        <!--SendGrid API-->
+        <dependency>
+    <groupId>com.sendgrid</groupId>
+    <artifactId>sendgrid-java</artifactId>
+    <version>4.10.1</version>
+</dependency>
+
     </dependencies>
 
     <build>
@@ -149,6 +157,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <release>${maven.compiler.release}</release>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
