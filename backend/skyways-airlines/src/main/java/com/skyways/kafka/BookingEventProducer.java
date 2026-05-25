@@ -19,12 +19,19 @@ public class BookingEventProducer {
 
     public void sendBookingEvent(String message) {
         if (kafkaTemplate != null) {
-            logger.info("Publishing booking event: {}", message);
-            kafkaTemplate.send(TOPIC, message);
-            logger.info("Booking event published successfully");
+            try {
+                logger.info("Publishing booking event: {}", 
+                    message);
+                kafkaTemplate.send(TOPIC, message);
+                logger.info("Booking event published successfully");
+            } catch (Exception e) {
+                logger.warn("Kafka not available, " +
+                    "skipping booking event: {}", 
+                    e.getMessage());
+            }
         } else {
-            logger.warn("Kafka not available, skipping event: {}", 
-                message);
+            logger.warn("Kafka not available, " +
+                "skipping event: {}", message);
         }
     }
 }

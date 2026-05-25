@@ -96,12 +96,15 @@ export class BookingComponent implements OnInit {
   }
 
   isSeatAvailable(seat: string): boolean {
-    if (!this.availability) return true;
-    if (seat === 'WINDOW') return this.availability.windowAvailable;
-    if (seat === 'AISLE') return this.availability.aisleAvailable;
-    if (seat === 'MIDDLE') return this.availability.middleAvailable;
-    return true;
-  }
+  if (!this.availability) return true;
+  if (seat === 'WINDOW') 
+    return !this.availability.windowFull;
+  if (seat === 'AISLE') 
+    return !this.availability.aisleFull;
+  if (seat === 'MIDDLE') 
+    return !this.availability.middleFull;
+  return true;
+}
 
   calculatePrice() {
     this.totalPrice = this.basePrice +
@@ -153,4 +156,15 @@ export class BookingComponent implements OnInit {
   goBack() {
     this.router.navigate(['/flights']);
   }
+
+  getSeatCount(seat: string): number {
+  if (!this.availability) return 60;
+  if (seat === 'WINDOW') 
+    return this.availability.windowAvailable;
+  if (seat === 'AISLE') 
+    return this.availability.aisleAvailable;
+  if (seat === 'MIDDLE') 
+    return this.availability.middleAvailable;
+  return 60;
+}
 }

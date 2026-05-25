@@ -19,12 +19,19 @@ public class PaymentEventProducer {
 
     public void sendPaymentEvent(String message) {
         if (kafkaTemplate != null) {
-            logger.info("Publishing payment event: {}", message);
-            kafkaTemplate.send(TOPIC, message);
-            logger.info("Payment event published successfully");
+            try {
+                logger.info("Publishing payment event: {}",
+                    message);
+                kafkaTemplate.send(TOPIC, message);
+                logger.info("Payment event published successfully");
+            } catch (Exception e) {
+                logger.warn("Kafka not available, " +
+                    "skipping payment event: {}",
+                    e.getMessage());
+            }
         } else {
-            logger.warn("Kafka not available, skipping event: {}", 
-                message);
+            logger.warn("Kafka not available, " +
+                "skipping event: {}", message);
         }
     }
 }

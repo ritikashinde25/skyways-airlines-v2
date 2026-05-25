@@ -74,22 +74,28 @@
             </span>
           </div>
 
-          <!-- Availability Info -->
-          <div *ngIf="availability" class="mt-3 p-2"
-               style="background: #f8f9fa; border-radius: 8px;">
-            <div class="d-flex justify-content-between">
-              <small class="text-muted">Seats Available:</small>
-              <small [style]="availability.availableSeats < 20 ?
-                             'color: red; font-weight: 700;' :
-                             'color: green; font-weight: 700;'">
-                {{ availability.availableSeats }} / 
-                {{ availability.totalSeats }}
-              </small>
-            </div>
+          <!-- Availability Info - realistic style -->
+          <div *ngIf="availability" class="mt-3">
             <div *ngIf="availability.isFullyBooked"
-                 class="alert alert-danger mt-2 mb-0 py-1
-                        text-center">
-              <small>Flight is fully booked!</small>
+                 class="alert alert-danger text-center mb-0">
+              <strong>Flight is fully booked!</strong>
+            </div>
+            <div *ngIf="!availability.isFullyBooked &&
+                        availability.availableSeats <= 4"
+                 class="alert alert-danger text-center mb-0">
+              <strong>
+                Hurry! Only {{ availability.availableSeats }}
+                seats left!
+              </strong>
+            </div>
+            <div *ngIf="!availability.isFullyBooked &&
+                        availability.availableSeats > 4 &&
+                        availability.availableSeats <= 20"
+                 class="alert alert-warning text-center mb-0">
+              <strong>
+                Only {{ availability.availableSeats }}
+                seats left!
+              </strong>
             </div>
           </div>
         </div>
@@ -123,6 +129,15 @@
                   {{ !isSeatAvailable(seat) ? 'Not Available' :
                      seat === 'MIDDLE' ? 'No extra charge' :
                      seat === 'AISLE' ? '+INR 500' : '+INR 1000' }}
+                </small>
+                <!-- Show remaining seats warning -->
+                <small *ngIf="availability && isSeatAvailable(seat)"
+                       [style]="getSeatCount(seat) <= 5 ?
+                               'color: red; display: block; font-weight: 700;' :
+                               getSeatCount(seat) <= 15 ?
+                               'color: orange; display: block;' :
+                               'display: none;'">
+                  Only {{ getSeatCount(seat) }} left!
                 </small>
               </div>
             </div>
@@ -188,8 +203,8 @@
 
             <button class="btn-gold"
                     (click)="onBook()"
-                    [disabled]="isSuccess || 
-                               (availability && 
+                    [disabled]="isSuccess ||
+                               (availability &&
                                 availability.isFullyBooked)">
               {{ isSuccess ? 'Redirecting to Payment...' :
                  availability && availability.isFullyBooked ?

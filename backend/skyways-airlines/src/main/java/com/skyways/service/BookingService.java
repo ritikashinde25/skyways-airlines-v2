@@ -30,7 +30,11 @@ public class BookingService {
     private static final Logger logger =
         LoggerFactory.getLogger(BookingService.class);
 
+    // Real airplane seat distribution
     private static final int MAX_SEATS_PER_FLIGHT = 180;
+    private static final int MAX_WINDOW_SEATS = 60;
+    private static final int MAX_AISLE_SEATS = 60;
+    private static final int MAX_MIDDLE_SEATS = 60;
 
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
@@ -49,28 +53,30 @@ public class BookingService {
                 SeatType.valueOf(bookingDTO.getSeatType()
                     .toUpperCase()) : SeatType.MIDDLE;
 
-            // Check if specific seat type is taken
-            boolean seatTaken = bookingRepository
-                .existsByFlightIdAndSeatTypeAndStatus(
+            // Check if specific seat type is full
+            long seatTypeCount = bookingRepository
+                .countByFlightIdAndSeatTypeAndStatus(
                     bookingDTO.getFlightId(),
                     seatType,
                     BookingStatus.CONFIRMED);
 
-            if (seatTaken) {
-                logger.warn("Seat {} already taken for flight: {}",
+            int maxSeatsForType = getMaxSeatsForType(seatType);
+
+            if (seatTypeCount >= maxSeatsForType) {
+                logger.warn("{} seats fully booked for flight: {}",
                     seatType, bookingDTO.getFlightId());
                 throw new ResourceNotFoundException(
-                    "Seat " + seatType + 
-                    " already taken! Please select another seat.");
+                    seatType + " seats are not available! " +
+                    "Please select a different seat type.");
             }
 
             // Check if flight is fully booked
-            long bookingCount = bookingRepository
+            long totalBookings = bookingRepository
                 .countByFlightIdAndStatus(
                     bookingDTO.getFlightId(),
                     BookingStatus.CONFIRMED);
 
-            if (bookingCount >= MAX_SEATS_PER_FLIGHT) {
+            if (totalBookings >= MAX_SEATS_PER_FLIGHT) {
                 logger.warn("Flight fully booked: {}",
                     bookingDTO.getFlightId());
                 throw new ResourceNotFoundException(
@@ -94,7 +100,7 @@ public class BookingService {
                     .build();
 
             Booking saved = bookingRepository.save(booking);
-            logger.info("Booking created with ID: {}", 
+            logger.info("Booking created with ID: {}",
                 saved.getId());
 
             // Publish Kafka event
@@ -108,6 +114,71 @@ public class BookingService {
 
             return saved;
         }
+    }
+
+    private int getMaxSeatsForType(SeatType seatType) {
+        return switch (seatType) {
+            case WINDOW -> MAX_WINDOW_SEATS;
+            case AISLE -> MAX_AISLE_SEATS;
+            case MIDDLE -> MAX_MIDDLE_SEATS;
+        };
+    }
+
+    public Map<String, Object> getFlightAvailability(
+            String flightId) {
+        logger.info("Checking availability for flight: {}",
+            flightId);
+
+        long totalBookings = bookingRepository
+            .countByFlightIdAndStatus(
+                flightId, BookingStatus.CONFIRMED);
+
+        long windowBooked = bookingRepository
+            .countByFlightIdAndSeatTypeAndStatus(
+                flightId, SeatType.WINDOW,
+                BookingStatus.CONFIRMED);
+
+        long aisleBooked = bookingRepository
+            .countByFlightIdAndSeatTypeAndStatus(
+                flightId, SeatType.AISLE,
+                BookingStatus.CONFIRMED);
+
+        long middleBooked = bookingRepository
+            .countByFlightIdAndSeatTypeAndStatus(
+                flightId, SeatType.MIDDLE,
+                BookingStatus.CONFIRMED);
+
+        long windowAvailable = MAX_WINDOW_SEATS - windowBooked;
+        long aisleAvailable = MAX_AISLE_SEATS - aisleBooked;
+        long middleAvailable = MAX_MIDDLE_SEATS - middleBooked;
+        long totalAvailable = MAX_SEATS_PER_FLIGHT - totalBookings;
+
+        Map<String, Object> availability = new HashMap<>();
+        availability.put("flightId", flightId);
+        availability.put("totalSeats", MAX_SEATS_PER_FLIGHT);
+        availability.put("totalBooked", totalBookings);
+        availability.put("availableSeats", totalAvailable);
+        availability.put("isFullyBooked", totalAvailable <= 0);
+
+        // Window seats
+        availability.put("windowTotal", MAX_WINDOW_SEATS);
+        availability.put("windowBooked", windowBooked);
+        availability.put("windowAvailable", windowAvailable);
+        availability.put("windowFull", windowAvailable <= 0);
+
+        // Aisle seats
+        availability.put("aisleTotal", MAX_AISLE_SEATS);
+        availability.put("aisleBooked", aisleBooked);
+        availability.put("aisleAvailable", aisleAvailable);
+        availability.put("aisleFull", aisleAvailable <= 0);
+
+        // Middle seats
+        availability.put("middleTotal", MAX_MIDDLE_SEATS);
+        availability.put("middleBooked", middleBooked);
+        availability.put("middleAvailable", middleAvailable);
+        availability.put("middleFull", middleAvailable <= 0);
+
+        return availability;
     }
 
     public List<Booking> getAllBookings() {
@@ -128,45 +199,6 @@ public class BookingService {
                 return new ResourceNotFoundException(
                     AppConstants.ERROR_BOOKING_NOT_FOUND + ": " + id);
             });
-    }
-
-    public Map<String, Object> getFlightAvailability(
-            String flightId) {
-        logger.info("Checking availability for flight: {}",
-            flightId);
-
-        long bookedSeats = bookingRepository
-            .countByFlightIdAndStatus(
-                flightId, BookingStatus.CONFIRMED);
-
-        long availableSeats = MAX_SEATS_PER_FLIGHT - bookedSeats;
-
-        // Check which seat types are taken
-        boolean windowTaken = bookingRepository
-            .existsByFlightIdAndSeatTypeAndStatus(
-                flightId, SeatType.WINDOW, 
-                BookingStatus.CONFIRMED);
-        boolean aisleTaken = bookingRepository
-            .existsByFlightIdAndSeatTypeAndStatus(
-                flightId, SeatType.AISLE,
-                BookingStatus.CONFIRMED);
-        boolean middleTaken = bookingRepository
-            .existsByFlightIdAndSeatTypeAndStatus(
-                flightId, SeatType.MIDDLE,
-                BookingStatus.CONFIRMED);
-
-        Map<String, Object> availability = new HashMap<>();
-        availability.put("flightId", flightId);
-        availability.put("totalSeats", MAX_SEATS_PER_FLIGHT);
-        availability.put("bookedSeats", bookedSeats);
-        availability.put("availableSeats", availableSeats);
-        availability.put("isFullyBooked", 
-            availableSeats <= 0);
-        availability.put("windowAvailable", !windowTaken);
-        availability.put("aisleAvailable", !aisleTaken);
-        availability.put("middleAvailable", !middleTaken);
-
-        return availability;
     }
 
     public Map<String, Object> cancelBooking(Long id) {
