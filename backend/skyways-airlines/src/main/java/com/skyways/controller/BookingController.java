@@ -66,4 +66,12 @@ public class BookingController {
         logger.info("Cancel booking: {}", id);
         return ResponseEntity.ok(bookingService.cancelBooking(id));
     }
+
+    @GetMapping("/availability/{flightId}")
+    public ResponseEntity<Map<String, Object>> getFlightAvailability(
+            @PathVariable String flightId) {
+        logger.info("Get availability for flight: {}", flightId);
+        return ResponseEntity.ok(
+            bookingService.getFlightAvailability(flightId));
+    }
 }

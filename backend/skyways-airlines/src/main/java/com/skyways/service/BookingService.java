@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -29,47 +30,84 @@ public class BookingService {
     private static final Logger logger =
         LoggerFactory.getLogger(BookingService.class);
 
+    private static final int MAX_SEATS_PER_FLIGHT = 180;
+
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
     private final PaymentRepository paymentRepository;
     private final StripeService stripeService;
     private final BookingEventProducer bookingEventProducer;
 
+    @Transactional
     public Booking createBooking(BookingDTO bookingDTO) {
         logger.info("Creating booking for user: {}",
             bookingDTO.getUsername());
 
-        Booking booking = Booking.builder()
-                .username(bookingDTO.getUsername())
-                .flightId(bookingDTO.getFlightId())
-                .flightNumber(bookingDTO.getFlightNumber())
-                .origin(bookingDTO.getOrigin())
-                .destination(bookingDTO.getDestination())
-                .bookingDate(bookingDTO.getBookingDate())
-                .totalPrice(bookingDTO.getTotalPrice())
-                .status(BookingStatus.CONFIRMED)
-                .travelClass(bookingDTO.getTravelClass() != null ?
-                    FlightClass.valueOf(bookingDTO.getTravelClass()
-                        .replace(" ", "_").toUpperCase()) :
-                    FlightClass.ECONOMY)
-                .seatType(bookingDTO.getSeatType() != null ?
-                    SeatType.valueOf(bookingDTO.getSeatType()
-                        .toUpperCase()) : SeatType.MIDDLE)
-                .build();
+        synchronized (bookingDTO.getFlightId().intern()) {
 
-        Booking saved = bookingRepository.save(booking);
-        logger.info("Booking created with ID: {}", saved.getId());
+            SeatType seatType = bookingDTO.getSeatType() != null ?
+                SeatType.valueOf(bookingDTO.getSeatType()
+                    .toUpperCase()) : SeatType.MIDDLE;
 
-        // Publish Kafka event
-        String event = "BOOKING_CREATED|" + saved.getId() +
-            "|" + saved.getUsername() +
-            "|" + saved.getFlightNumber() +
-            "|" + saved.getOrigin() +
-            "|" + saved.getDestination() +
-            "|" + saved.getTotalPrice();
-        bookingEventProducer.sendBookingEvent(event);
+            // Check if specific seat type is taken
+            boolean seatTaken = bookingRepository
+                .existsByFlightIdAndSeatTypeAndStatus(
+                    bookingDTO.getFlightId(),
+                    seatType,
+                    BookingStatus.CONFIRMED);
 
-        return saved;
+            if (seatTaken) {
+                logger.warn("Seat {} already taken for flight: {}",
+                    seatType, bookingDTO.getFlightId());
+                throw new ResourceNotFoundException(
+                    "Seat " + seatType + 
+                    " already taken! Please select another seat.");
+            }
+
+            // Check if flight is fully booked
+            long bookingCount = bookingRepository
+                .countByFlightIdAndStatus(
+                    bookingDTO.getFlightId(),
+                    BookingStatus.CONFIRMED);
+
+            if (bookingCount >= MAX_SEATS_PER_FLIGHT) {
+                logger.warn("Flight fully booked: {}",
+                    bookingDTO.getFlightId());
+                throw new ResourceNotFoundException(
+                    "Flight is fully booked!");
+            }
+
+            Booking booking = Booking.builder()
+                    .username(bookingDTO.getUsername())
+                    .flightId(bookingDTO.getFlightId())
+                    .flightNumber(bookingDTO.getFlightNumber())
+                    .origin(bookingDTO.getOrigin())
+                    .destination(bookingDTO.getDestination())
+                    .bookingDate(bookingDTO.getBookingDate())
+                    .totalPrice(bookingDTO.getTotalPrice())
+                    .status(BookingStatus.CONFIRMED)
+                    .travelClass(bookingDTO.getTravelClass() != null ?
+                        FlightClass.valueOf(bookingDTO.getTravelClass()
+                            .replace(" ", "_").toUpperCase()) :
+                        FlightClass.ECONOMY)
+                    .seatType(seatType)
+                    .build();
+
+            Booking saved = bookingRepository.save(booking);
+            logger.info("Booking created with ID: {}", 
+                saved.getId());
+
+            // Publish Kafka event
+            String event = "BOOKING_CREATED|" + saved.getId() +
+                "|" + saved.getUsername() +
+                "|" + saved.getFlightNumber() +
+                "|" + saved.getOrigin() +
+                "|" + saved.getDestination() +
+                "|" + saved.getTotalPrice();
+            bookingEventProducer.sendBookingEvent(event);
+
+            return saved;
+        }
     }
 
     public List<Booking> getAllBookings() {
@@ -90,6 +128,45 @@ public class BookingService {
                 return new ResourceNotFoundException(
                     AppConstants.ERROR_BOOKING_NOT_FOUND + ": " + id);
             });
+    }
+
+    public Map<String, Object> getFlightAvailability(
+            String flightId) {
+        logger.info("Checking availability for flight: {}",
+            flightId);
+
+        long bookedSeats = bookingRepository
+            .countByFlightIdAndStatus(
+                flightId, BookingStatus.CONFIRMED);
+
+        long availableSeats = MAX_SEATS_PER_FLIGHT - bookedSeats;
+
+        // Check which seat types are taken
+        boolean windowTaken = bookingRepository
+            .existsByFlightIdAndSeatTypeAndStatus(
+                flightId, SeatType.WINDOW, 
+                BookingStatus.CONFIRMED);
+        boolean aisleTaken = bookingRepository
+            .existsByFlightIdAndSeatTypeAndStatus(
+                flightId, SeatType.AISLE,
+                BookingStatus.CONFIRMED);
+        boolean middleTaken = bookingRepository
+            .existsByFlightIdAndSeatTypeAndStatus(
+                flightId, SeatType.MIDDLE,
+                BookingStatus.CONFIRMED);
+
+        Map<String, Object> availability = new HashMap<>();
+        availability.put("flightId", flightId);
+        availability.put("totalSeats", MAX_SEATS_PER_FLIGHT);
+        availability.put("bookedSeats", bookedSeats);
+        availability.put("availableSeats", availableSeats);
+        availability.put("isFullyBooked", 
+            availableSeats <= 0);
+        availability.put("windowAvailable", !windowTaken);
+        availability.put("aisleAvailable", !aisleTaken);
+        availability.put("middleAvailable", !middleTaken);
+
+        return availability;
     }
 
     public Map<String, Object> cancelBooking(Long id) {

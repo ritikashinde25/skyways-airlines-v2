@@ -1,5 +1,6 @@
 package com.skyways.service;
 
+import com.skyways.config.EncryptionConfig;
 import com.skyways.constants.AppConstants;
 import com.skyways.dto.AuthResponseDTO;
 import com.skyways.dto.LoginDTO;
@@ -26,62 +27,78 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final EncryptionConfig encryptionConfig;
 
     public String registerUser(UserDTO userDTO) {
-        logger.info("Registering new user: {}", userDTO.getUsername());
+        logger.info("Registering new user: {}", 
+            userDTO.getUsername());
 
         Optional.ofNullable(userDTO.getUsername())
             .filter(u -> !u.isBlank())
             .orElseThrow(() -> new IllegalArgumentException(
                 AppConstants.ERROR_FIELDS_REQUIRED));
 
-        if (userRepository.existsByUsername(userDTO.getUsername())) {
-            logger.warn("Username already exists: {}", 
+        if (userRepository.existsByUsername(
+                userDTO.getUsername())) {
+            logger.warn("Username already exists: {}",
                 userDTO.getUsername());
             throw new DuplicateResourceException(
                 AppConstants.ERROR_DUPLICATE_USERNAME);
         }
 
         if (userRepository.existsByEmail(userDTO.getEmail())) {
-            logger.warn("Email already exists: {}", userDTO.getEmail());
+            logger.warn("Email already exists: {}",
+                userDTO.getEmail());
             throw new DuplicateResourceException(
                 AppConstants.ERROR_DUPLICATE_EMAIL);
         }
 
+        // Encrypt password using 3-DES
+        String encryptedPassword = encryptionConfig.encrypt(
+            userDTO.getPassword());
+        logger.info("Password encrypted for user: {}",
+            userDTO.getUsername());
+
         User user = User.builder()
                 .username(userDTO.getUsername())
                 .email(userDTO.getEmail())
-                .password(userDTO.getPassword())
+                .password(encryptedPassword)
                 .role("USER")
                 .build();
 
         userRepository.save(user);
-        logger.info("User registered successfully: {}", 
+        logger.info("User registered successfully: {}",
             userDTO.getUsername());
-        return AppConstants.SUCCESS_REGISTER + ": " + 
+        return AppConstants.SUCCESS_REGISTER + ": " +
             userDTO.getUsername();
     }
 
     public AuthResponseDTO loginUser(LoginDTO loginDTO) {
-        logger.info("Login attempt for user: {}", loginDTO.getUsername());
+        logger.info("Login attempt for user: {}",
+            loginDTO.getUsername());
 
         User user = userRepository
             .findByUsername(loginDTO.getUsername())
             .orElseThrow(() -> {
-                logger.warn("User not found: {}", loginDTO.getUsername());
+                logger.warn("User not found: {}",
+                    loginDTO.getUsername());
                 return new ResourceNotFoundException(
                     AppConstants.ERROR_USER_NOT_FOUND);
             });
 
-        if (!user.getPassword().equals(loginDTO.getPassword())) {
-            logger.warn("Invalid password for user: {}", 
+        // Decrypt stored password and compare
+        String decryptedPassword = encryptionConfig.decrypt(
+            user.getPassword());
+
+        if (!decryptedPassword.equals(loginDTO.getPassword())) {
+            logger.warn("Invalid password for user: {}",
                 loginDTO.getUsername());
             throw new InvalidCredentialsException(
                 AppConstants.ERROR_INVALID_PASSWORD);
         }
 
         String token = jwtUtil.generateToken(user.getUsername());
-        logger.info("Login successful for user: {}", 
+        logger.info("Login successful for user: {}",
             loginDTO.getUsername());
 
         return AuthResponseDTO.builder()

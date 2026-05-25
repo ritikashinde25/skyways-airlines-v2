@@ -7,6 +7,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -14,8 +21,6 @@ public class SkyscannerService {
 
     private static final Logger logger =
         LoggerFactory.getLogger(SkyscannerService.class);
-
-    private final RestTemplate restTemplate;
 
     @Value("${skyscanner.api.key}")
     private String apiKey;
@@ -25,6 +30,34 @@ public class SkyscannerService {
 
     @Value("${skyscanner.api.url}")
     private String apiUrl;
+
+    private RestTemplate getRestTemplate() {
+        try {
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return null;
+                    }
+                    public void checkClientTrusted(
+                        X509Certificate[] certs, 
+                        String authType) {}
+                    public void checkServerTrusted(
+                        X509Certificate[] certs, 
+                        String authType) {}
+                }
+            };
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(
+                sc.getSocketFactory());
+            HttpsURLConnection.setDefaultHostnameVerifier(
+                (hostname, session) -> true);
+            return new RestTemplate();
+        } catch (Exception e) {
+            logger.error("SSL setup failed: {}", e.getMessage());
+            return new RestTemplate();
+        }
+    }
 
     private HttpEntity<String> getHeaders() {
         HttpHeaders headers = new HttpHeaders();
@@ -36,12 +69,15 @@ public class SkyscannerService {
 
     private Object callApi(String url) {
         try {
-            ResponseEntity<Object> response = restTemplate.exchange(
-                url, HttpMethod.GET, getHeaders(), Object.class);
+            ResponseEntity<Object> response = 
+                getRestTemplate().exchange(
+                    url, HttpMethod.GET, 
+                    getHeaders(), Object.class);
             return response.getBody();
         } catch (Exception e) {
             logger.error("API call failed: {}", e.getMessage());
-            throw new RuntimeException("API call failed: " + e.getMessage());
+            throw new RuntimeException(
+                "API call failed: " + e.getMessage());
         }
     }
 
@@ -52,7 +88,7 @@ public class SkyscannerService {
             String returnDate, String cabinClass,
             int adults, int childrens, int infants) {
 
-        logger.info("Searching flights: {} to {}", 
+        logger.info("Searching flights: {} to {}",
             originSkyId, destinationSkyId);
 
         String url = apiUrl + "/flights/searchFlights" +
@@ -88,12 +124,11 @@ public class SkyscannerService {
         return callApi(url);
     }
 
-    // 3. Search Incomplete (pagination)
+    // 3. Search Incomplete
     public Object searchIncomplete(String sessionId,
             String currency) {
 
-        logger.info("Fetching incomplete results, session: {}",
-            sessionId);
+        logger.info("Fetching incomplete results: {}", sessionId);
 
         String url = apiUrl + "/flights/searchIncomplete" +
             "?sessionId=" + sessionId +
@@ -122,8 +157,8 @@ public class SkyscannerService {
     public Object getCheapestOneway(String originSkyId,
             String destinationSkyId, String month) {
 
-        logger.info("Cheapest oneway: {} to {} for {}",
-            originSkyId, destinationSkyId, month);
+        logger.info("Cheapest oneway: {} to {}",
+            originSkyId, destinationSkyId);
 
         String url = apiUrl + "/flights/getCheapestOneway" +
             "?originSkyId=" + originSkyId +
@@ -139,7 +174,7 @@ public class SkyscannerService {
             String destinationSkyId, String fromDate,
             String toDate, String cabinClass) {
 
-        logger.info("Price calendar: {} to {}", 
+        logger.info("Price calendar: {} to {}",
             originSkyId, destinationSkyId);
 
         String url = apiUrl + "/flights/getPriceCalendar" +

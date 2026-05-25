@@ -30,4 +30,9 @@ export class BookingService {
   cancelBooking(id: number): Observable<any> {
     return this.http.put(`${this.baseUrl}/cancel/${id}`, {});
   }
+
+  getFlightAvailability(flightId: string): Observable<any> {
+    return this.http.get(
+      `${this.baseUrl}/availability/${flightId}`);
+  }
 }
