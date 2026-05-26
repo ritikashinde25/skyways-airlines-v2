@@ -4,6 +4,7 @@ import com.skyways.constants.AppConstants;
 import com.skyways.dto.BookingDTO;
 import com.skyways.entity.Booking;
 import com.skyways.entity.Payment;
+import com.skyways.entity.User;
 import com.skyways.enums.BookingStatus;
 import com.skyways.enums.FlightClass;
 import com.skyways.enums.SeatType;
@@ -12,6 +13,7 @@ import com.skyways.kafka.BookingEventProducer;
 import com.skyways.mapper.BookingMapper;
 import com.skyways.repository.BookingRepository;
 import com.skyways.repository.PaymentRepository;
+import com.skyways.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,16 @@ public class BookingService {
     private final StripeService stripeService;
     private final BookingEventProducer bookingEventProducer;
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
+
+    private String getEmailForUser(String username, String bookingEmail) {
+        if (bookingEmail != null && !bookingEmail.isEmpty()) {
+            return bookingEmail;
+        }
+        return userRepository.findByUsername(username)
+            .map(User::getEmail)
+            .orElse(username + "@gmail.com");
+    }
 
     @Transactional
     public Booking createBooking(BookingDTO bookingDTO) {
@@ -99,8 +111,7 @@ public class BookingService {
                     .build();
 
             Booking saved = bookingRepository.save(booking);
-            logger.info("Booking created with ID: {}",
-                saved.getId());
+            logger.info("Booking created with ID: {}", saved.getId());
 
             // Publish Kafka event
             String event = "BOOKING_CREATED|" + saved.getId() +
@@ -113,10 +124,8 @@ public class BookingService {
 
             // Send booking confirmation email
             try {
-                String emailTo = saved.getEmail() != null &&
-                    !saved.getEmail().isEmpty() ?
-                    saved.getEmail() :
-                    saved.getUsername() + "@gmail.com";
+                String emailTo = getEmailForUser(
+                    saved.getUsername(), saved.getEmail());
                 notificationService.sendBookingConfirmation(
                     saved.getUsername(),
                     emailTo,
@@ -142,29 +151,23 @@ public class BookingService {
         };
     }
 
-    public Map<String, Object> getFlightAvailability(
-            String flightId) {
-        logger.info("Checking availability for flight: {}",
-            flightId);
+    public Map<String, Object> getFlightAvailability(String flightId) {
+        logger.info("Checking availability for flight: {}", flightId);
 
         long totalBookings = bookingRepository
-            .countByFlightIdAndStatus(
-                flightId, BookingStatus.CONFIRMED);
+            .countByFlightIdAndStatus(flightId, BookingStatus.CONFIRMED);
 
         long windowBooked = bookingRepository
             .countByFlightIdAndSeatTypeAndStatus(
-                flightId, SeatType.WINDOW,
-                BookingStatus.CONFIRMED);
+                flightId, SeatType.WINDOW, BookingStatus.CONFIRMED);
 
         long aisleBooked = bookingRepository
             .countByFlightIdAndSeatTypeAndStatus(
-                flightId, SeatType.AISLE,
-                BookingStatus.CONFIRMED);
+                flightId, SeatType.AISLE, BookingStatus.CONFIRMED);
 
         long middleBooked = bookingRepository
             .countByFlightIdAndSeatTypeAndStatus(
-                flightId, SeatType.MIDDLE,
-                BookingStatus.CONFIRMED);
+                flightId, SeatType.MIDDLE, BookingStatus.CONFIRMED);
 
         long windowAvailable = MAX_WINDOW_SEATS - windowBooked;
         long aisleAvailable = MAX_AISLE_SEATS - aisleBooked;
@@ -217,11 +220,9 @@ public class BookingService {
         logger.info("Cancelling booking: {}", id);
         Booking booking = getBookingById(id);
 
-        LocalDate travelDate = LocalDate.parse(
-            booking.getBookingDate());
+        LocalDate travelDate = LocalDate.parse(booking.getBookingDate());
         LocalDate today = LocalDate.now();
-        long daysUntilTravel = ChronoUnit.DAYS.between(
-            today, travelDate);
+        long daysUntilTravel = ChronoUnit.DAYS.between(today, travelDate);
 
         double refundPercentage;
         String refundMessage;
@@ -240,10 +241,8 @@ public class BookingService {
             refundMessage = "No refund for same day cancellation";
         }
 
-        double refundAmount = booking.getTotalPrice() *
-            refundPercentage / 100;
-        double deductionAmount = booking.getTotalPrice() -
-            refundAmount;
+        double refundAmount = booking.getTotalPrice() * refundPercentage / 100;
+        double deductionAmount = booking.getTotalPrice() - refundAmount;
 
         boolean stripeRefundProcessed = false;
         if (refundAmount > 0) {
@@ -268,15 +267,12 @@ public class BookingService {
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
 
-        logger.info("Booking cancelled: {}, Refund: {}%",
-            id, refundPercentage);
+        logger.info("Booking cancelled: {}, Refund: {}%", id, refundPercentage);
 
         // Send cancellation email
         try {
-            String emailTo = booking.getEmail() != null &&
-                !booking.getEmail().isEmpty() ?
-                booking.getEmail() :
-                booking.getUsername() + "@gmail.com";
+            String emailTo = getEmailForUser(
+                booking.getUsername(), booking.getEmail());
             notificationService.sendCancellationNotice(
                 booking.getUsername(),
                 emailTo,
@@ -287,11 +283,9 @@ public class BookingService {
                 refundAmount,
                 booking.getTotalPrice(),
                 refundPercentage);
-            logger.info("Cancellation email sent to: {}",
-                emailTo);
+            logger.info("Cancellation email sent to: {}", emailTo);
         } catch (Exception e) {
-            logger.warn("Cancellation email failed: {}",
-                e.getMessage());
+            logger.warn("Cancellation email failed: {}", e.getMessage());
         }
 
         Map<String, Object> response = new HashMap<>();
@@ -303,8 +297,7 @@ public class BookingService {
         response.put("deductionAmount", deductionAmount);
         response.put("refundMessage", refundMessage);
         response.put("daysUntilTravel", daysUntilTravel);
-        response.put("stripeRefundProcessed",
-            stripeRefundProcessed);
+        response.put("stripeRefundProcessed", stripeRefundProcessed);
 
         return response;
     }

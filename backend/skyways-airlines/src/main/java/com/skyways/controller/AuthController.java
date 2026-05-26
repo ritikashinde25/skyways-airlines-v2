@@ -54,4 +54,22 @@ public class AuthController {
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(authService.getAllUsers());
     }
+
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(
+            @RequestParam String email) {
+        logger.info("Forgot password request for: {}", email);
+        return ResponseEntity.ok(
+            authService.forgotPassword(email));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(
+            @RequestParam String token,
+            @RequestParam String newPassword) {
+        logger.info("Reset password request");
+        return ResponseEntity.ok(
+            authService.resetPassword(token, newPassword));
+    }
 }

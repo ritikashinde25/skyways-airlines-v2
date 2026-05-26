@@ -1,29 +1,38 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
 
 @Component({
-  selector: 'app-register',
+  selector: 'app-reset-password',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './register.html',
-  styleUrl: './register.css'
+  templateUrl: './reset-password.html',
+  styleUrl: './reset-password.css'
 })
-export class RegisterComponent {
+export class ResetPasswordComponent implements OnInit {
 
-  user = { username: '', email: '', password: '' };
+  token = '';
+  newPassword = '';
+  confirmPassword = '';
   message = '';
   isError = false;
+  isSuccess = false;
+  isLoading = false;
   passwordStrength = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router, private route: ActivatedRoute) {}
 
   hasUpper(p: string) { return /[A-Z]/.test(p); }
   hasLower(p: string) { return /[a-z]/.test(p); }
   hasNumber(p: string) { return /[0-9]/.test(p); }
   hasSpecial(p: string) { return /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p); }
+
+  ngOnInit() {
+    this.token = this.route.snapshot.queryParams['token'] || '';
+    if (!this.token) { this.message = 'Invalid reset link!'; this.isError = true; }
+  }
 
   validatePassword(password: string): string | null {
     if (password.length < 8) return 'Password must be at least 8 characters!';
@@ -48,24 +57,30 @@ export class RegisterComponent {
     else this.passwordStrength = 'very-strong';
   }
 
-  onRegister() {
-    if (!this.user.username || !this.user.email || !this.user.password) {
-      this.message = 'Please fill in all fields!';
-      this.isError = true;
-      return;
+  onSubmit() {
+    if (!this.newPassword || !this.confirmPassword) {
+      this.message = 'Please fill in all fields!'; this.isError = true; return;
     }
-    const passwordError = this.validatePassword(this.user.password);
+    const passwordError = this.validatePassword(this.newPassword);
     if (passwordError) { this.message = passwordError; this.isError = true; return; }
-
-    this.authService.register(this.user).subscribe({
-      next: (response) => {
-        if (response.includes('successfully')) {
-          this.message = 'Registration successful! Please login.';
-          this.isError = false;
-          setTimeout(() => this.router.navigate(['/login']), 1500);
-        } else { this.message = response; this.isError = true; }
+    if (this.newPassword !== this.confirmPassword) {
+      this.message = 'Passwords do not match!'; this.isError = true; return;
+    }
+    this.isLoading = true;
+    this.message = '';
+    this.authService.resetPassword(this.token, this.newPassword).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.isSuccess = true;
+        this.isError = false;
+        this.message = 'Password reset successfully! Redirecting to login...';
+        setTimeout(() => this.router.navigate(['/login']), 2000);
       },
-      error: () => { this.message = 'Registration failed. Please try again!'; this.isError = true; }
+      error: (err) => {
+        this.isLoading = false;
+        this.isError = true;
+        this.message = err.error?.message || 'Reset failed. Link may have expired!';
+      }
     });
   }
 }

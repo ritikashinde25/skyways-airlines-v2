@@ -34,65 +34,43 @@
 
         <!-- Password strength bar -->
         <div *ngIf="user.password" class="mt-2">
-          <div style="height: 4px; border-radius: 2px; 
-                      background: #dee2e6;">
-            <div [style]="'height: 100%; border-radius: 2px; 
-                          transition: all 0.3s; width: ' +
+          <div style="height: 4px; border-radius: 2px; background: #dee2e6;">
+            <div [style]="'height: 100%; border-radius: 2px; transition: all 0.3s; width: ' +
                           (passwordStrength === 'weak' ? '25%' :
                            passwordStrength === 'medium' ? '50%' :
-                           passwordStrength === 'strong' ? '75%' : 
-                           '100%') +
+                           passwordStrength === 'strong' ? '75%' : '100%') +
                           '; background: ' +
                           (passwordStrength === 'weak' ? '#e53935' :
                            passwordStrength === 'medium' ? '#f57c00' :
-                           passwordStrength === 'strong' ? '#1976d2' :
-                           '#43a047')">
+                           passwordStrength === 'strong' ? '#1976d2' : '#43a047')">
             </div>
           </div>
           <small [style]="'font-weight: 700; color: ' +
                           (passwordStrength === 'weak' ? '#e53935' :
                            passwordStrength === 'medium' ? '#f57c00' :
-                           passwordStrength === 'strong' ? '#1976d2' :
-                           '#43a047')">
+                           passwordStrength === 'strong' ? '#1976d2' : '#43a047')">
             {{ passwordStrength | titlecase }} password
           </small>
         </div>
 
         <!-- Password hints -->
-        <div class="mt-2 p-2" 
-             style="background: #f8f9fa; border-radius: 8px;">
-          <small class="d-block"
-                 [style]="user.password && 
-                          user.password.length >= 8 ?
-                          'color: #43a047;' : 'color: #888;'">
+        <div class="mt-2 p-2" style="background: #f8f9fa; border-radius: 8px;">
+          <small class="d-block" [style.color]="user.password && user.password.length >= 8 ? '#43a047' : '#888'">
             &#10003; At least 8 characters
           </small>
-          <small class="d-block"
-                 [style]="user.password && 
-                          /[A-Z]/.test(user.password) ?
-                          'color: #43a047;' : 'color: #888;'">
+          <small class="d-block" [style.color]="user.password && hasUpper(user.password) ? '#43a047' : '#888'">
             &#10003; At least 1 uppercase letter
           </small>
-          <small class="d-block"
-                 [style]="user.password && 
-                          /[a-z]/.test(user.password) ?
-                          'color: #43a047;' : 'color: #888;'">
+          <small class="d-block" [style.color]="user.password && hasLower(user.password) ? '#43a047' : '#888'">
             &#10003; At least 1 lowercase letter
           </small>
-          <small class="d-block"
-                 [style]="user.password && 
-                          /[0-9]/.test(user.password) ?
-                          'color: #43a047;' : 'color: #888;'">
+          <small class="d-block" [style.color]="user.password && hasNumber(user.password) ? '#43a047' : '#888'">
             &#10003; At least 1 number
           </small>
-          <small class="d-block"
-                 [style]="user.password && 
-                          /[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]/.test(user.password) ?
-                          'color: #43a047;' : 'color: #888;'">
+          <small class="d-block" [style.color]="user.password && hasSpecial(user.password) ? '#43a047' : '#888'">
             &#10003; At least 1 special character (!@#$%^&*)
           </small>
         </div>
-      </div>
 
       <button class="btn-gold mb-3" (click)="onRegister()">
         REGISTER

@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +29,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final EncryptionConfig encryptionConfig;
+    private final NotificationService notificationService;
 
     public String registerUser(UserDTO userDTO) {
         logger.info("Registering new user: {}",
@@ -105,6 +107,67 @@ public class AuthService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .build();
+    }
+
+    public String forgotPassword(String email) {
+        logger.info("Forgot password request for: {}", email);
+
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> {
+                logger.warn("Email not found: {}", email);
+                return new ResourceNotFoundException(
+                    "No account found with email: " + email);
+            });
+
+        String resetToken = UUID.randomUUID().toString();
+        long expiry = System.currentTimeMillis() +
+            (30 * 60 * 1000); // 30 minutes
+
+        user.setResetToken(resetToken);
+        user.setResetTokenExpiry(expiry);
+        userRepository.save(user);
+
+        String resetLink = 
+            "http://localhost:4200/reset-password?token=" +
+            resetToken;
+
+        try {
+            notificationService.sendPasswordResetEmail(
+                user.getUsername(),
+                email,
+                resetLink);
+            logger.info("Password reset email sent to: {}", email);
+        } catch (Exception e) {
+            logger.warn("Reset email failed: {}", e.getMessage());
+        }
+
+        return "Password reset link sent to your email!";
+    }
+
+    public String resetPassword(String token, String newPassword) {
+        logger.info("Reset password request for token: {}", token);
+
+        User user = userRepository.findByResetToken(token)
+            .orElseThrow(() -> new ResourceNotFoundException(
+                "Invalid or expired reset token!"));
+
+        if (System.currentTimeMillis() > 
+                user.getResetTokenExpiry()) {
+            throw new InvalidCredentialsException(
+                "Reset token has expired! " +
+                "Please request a new one.");
+        }
+
+        String encryptedPassword = encryptionConfig.encrypt(
+            newPassword);
+        user.setPassword(encryptedPassword);
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        userRepository.save(user);
+
+        logger.info("Password reset successful for: {}",
+            user.getUsername());
+        return "Password reset successfully! Please login.";
     }
 
     public List<User> getAllUsers() {
