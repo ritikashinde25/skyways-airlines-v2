@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -18,7 +17,7 @@ import java.util.List;
 public class NotificationController {
 
     private static final Logger logger =
-            LoggerFactory.getLogger(NotificationController.class);
+        LoggerFactory.getLogger(NotificationController.class);
 
     private final NotificationService notificationService;
 
@@ -44,17 +43,10 @@ public class NotificationController {
             @RequestParam String email,
             @RequestParam String flightNumber,
             @RequestParam String origin,
-            @RequestParam String destination,
-            @RequestParam String flightDate,
-            @RequestParam String departureTime,
-            @RequestParam String arrivalTime,
-            @RequestParam String seatNumber,
-            @RequestParam String travelClass,
-            @RequestParam String pnr) {
-        Notification sent = notificationService.sendBookingConfirmation(
-                username, email, flightNumber, origin, destination,
-                flightDate, departureTime, arrivalTime,
-                seatNumber, travelClass, pnr);
+            @RequestParam String destination) {
+        Notification sent = notificationService
+            .sendBookingConfirmation(username, email,
+                flightNumber, origin, destination);
         return ResponseEntity.status(HttpStatus.CREATED).body(sent);
     }
 
@@ -63,20 +55,17 @@ public class NotificationController {
             @RequestParam String username,
             @RequestParam String email,
             @RequestParam String flightNumber,
-            @RequestParam String pnr) {
-        Notification sent = notificationService.sendCancellationNotice(
-                username, email, flightNumber, pnr);
-        return ResponseEntity.status(HttpStatus.CREATED).body(sent);
-    }
-
-    @PostMapping("/flight-delay")
-    public ResponseEntity<Notification> sendFlightDelay(
-            @RequestParam String username,
-            @RequestParam String email,
-            @RequestParam String flightNumber,
-            @RequestParam String newDepartureTime) {
-        Notification sent = notificationService.sendFlightDelayAlert(
-                username, email, flightNumber, newDepartureTime);
+            @RequestParam String origin,
+            @RequestParam String destination,
+            @RequestParam String bookingDate,
+            @RequestParam double refundAmount,
+            @RequestParam double totalPaid,
+            @RequestParam double refundPercentage) {
+        Notification sent = notificationService
+            .sendCancellationNotice(username, email,
+                flightNumber, origin, destination,
+                bookingDate, refundAmount,
+                totalPaid, refundPercentage);
         return ResponseEntity.status(HttpStatus.CREATED).body(sent);
     }
 

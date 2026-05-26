@@ -21,7 +21,10 @@ export class LoginComponent {
   message = '';
   isError = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   onLogin() {
     if (!this.user.username || !this.user.password) {
@@ -35,15 +38,17 @@ export class LoginComponent {
         if (response.token) {
           localStorage.setItem('username', response.username);
           localStorage.setItem('token', response.token);
+          localStorage.setItem('email', response.email || '');
           this.message = 'Login successful! Redirecting...';
           this.isError = false;
-          setTimeout(() => this.router.navigate(['/flights']), 1000);
+          setTimeout(() => 
+            this.router.navigate(['/flights']), 1000);
         } else {
           this.message = response.message || 'Login failed!';
           this.isError = true;
         }
       },
-      error: (err) => {
+      error: () => {
         this.message = 'Invalid username or password!';
         this.isError = true;
       }

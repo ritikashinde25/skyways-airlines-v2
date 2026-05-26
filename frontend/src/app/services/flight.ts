@@ -7,18 +7,15 @@ import { Observable } from 'rxjs';
 })
 export class FlightService {
 
-  private baseUrl = 'http://localhost:8080/api/flights';
   private skyscannerUrl = 'http://localhost:8080/api/skyscanner';
 
   constructor(private http: HttpClient) {}
 
-  // Search airport to get skyId and entityId
   searchAirport(query: string): Observable<any> {
     return this.http.get(
       `${this.skyscannerUrl}/search-airport?query=${query}`);
   }
 
-  // Search real flights via Skyscanner
   searchSkyscannerFlights(
       originSkyId: string,
       destinationSkyId: string,
@@ -39,7 +36,6 @@ export class FlightService {
     );
   }
 
-  // Get cheapest flights for a month
   getCheapestOneway(originSkyId: string,
       destinationSkyId: string,
       month: string): Observable<any> {
@@ -49,9 +45,5 @@ export class FlightService {
       `&destinationSkyId=${destinationSkyId}` +
       `&month=${month}`
     );
-  }
-
-  getFlightById(id: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/${id}`);
   }
 }

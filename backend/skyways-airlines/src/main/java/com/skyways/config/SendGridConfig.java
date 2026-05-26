@@ -21,7 +21,6 @@ public class SendGridConfig {
     @Bean
     public SendGrid sendGrid() {
         try {
-            // ⚠️ SSL bypass — for development/testing only
             SSLContext sslContext = SSLContextBuilder
                     .create()
                     .loadTrustMaterial((chain, authType) -> true)

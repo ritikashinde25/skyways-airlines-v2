@@ -51,4 +51,7 @@ public class Booking {
 
     @Enumerated(EnumType.STRING)
     private SeatType seatType;
+
+    @Column
+    private String email;
 }

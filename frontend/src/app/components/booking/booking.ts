@@ -21,6 +21,7 @@ export class BookingComponent implements OnInit {
 
   booking: any = {
     username: localStorage.getItem('username') || '',
+    email: localStorage.getItem('email') || '',
     flightId: '',
     flightNumber: '',
     origin: '',

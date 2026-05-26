@@ -30,7 +30,6 @@ public class BookingService {
     private static final Logger logger =
         LoggerFactory.getLogger(BookingService.class);
 
-    // Real airplane seat distribution
     private static final int MAX_SEATS_PER_FLIGHT = 180;
     private static final int MAX_WINDOW_SEATS = 60;
     private static final int MAX_AISLE_SEATS = 60;
@@ -41,6 +40,7 @@ public class BookingService {
     private final PaymentRepository paymentRepository;
     private final StripeService stripeService;
     private final BookingEventProducer bookingEventProducer;
+    private final NotificationService notificationService;
 
     @Transactional
     public Booking createBooking(BookingDTO bookingDTO) {
@@ -53,7 +53,6 @@ public class BookingService {
                 SeatType.valueOf(bookingDTO.getSeatType()
                     .toUpperCase()) : SeatType.MIDDLE;
 
-            // Check if specific seat type is full
             long seatTypeCount = bookingRepository
                 .countByFlightIdAndSeatTypeAndStatus(
                     bookingDTO.getFlightId(),
@@ -70,7 +69,6 @@ public class BookingService {
                     "Please select a different seat type.");
             }
 
-            // Check if flight is fully booked
             long totalBookings = bookingRepository
                 .countByFlightIdAndStatus(
                     bookingDTO.getFlightId(),
@@ -85,6 +83,7 @@ public class BookingService {
 
             Booking booking = Booking.builder()
                     .username(bookingDTO.getUsername())
+                    .email(bookingDTO.getEmail())
                     .flightId(bookingDTO.getFlightId())
                     .flightNumber(bookingDTO.getFlightNumber())
                     .origin(bookingDTO.getOrigin())
@@ -111,6 +110,25 @@ public class BookingService {
                 "|" + saved.getDestination() +
                 "|" + saved.getTotalPrice();
             bookingEventProducer.sendBookingEvent(event);
+
+            // Send booking confirmation email
+            try {
+                String emailTo = saved.getEmail() != null &&
+                    !saved.getEmail().isEmpty() ?
+                    saved.getEmail() :
+                    saved.getUsername() + "@gmail.com";
+                notificationService.sendBookingConfirmation(
+                    saved.getUsername(),
+                    emailTo,
+                    saved.getFlightNumber(),
+                    saved.getOrigin(),
+                    saved.getDestination());
+                logger.info("Booking confirmation email sent to: {}",
+                    emailTo);
+            } catch (Exception e) {
+                logger.warn("Booking email failed: {}",
+                    e.getMessage());
+            }
 
             return saved;
         }
@@ -159,20 +177,14 @@ public class BookingService {
         availability.put("totalBooked", totalBookings);
         availability.put("availableSeats", totalAvailable);
         availability.put("isFullyBooked", totalAvailable <= 0);
-
-        // Window seats
         availability.put("windowTotal", MAX_WINDOW_SEATS);
         availability.put("windowBooked", windowBooked);
         availability.put("windowAvailable", windowAvailable);
         availability.put("windowFull", windowAvailable <= 0);
-
-        // Aisle seats
         availability.put("aisleTotal", MAX_AISLE_SEATS);
         availability.put("aisleBooked", aisleBooked);
         availability.put("aisleAvailable", aisleAvailable);
         availability.put("aisleFull", aisleAvailable <= 0);
-
-        // Middle seats
         availability.put("middleTotal", MAX_MIDDLE_SEATS);
         availability.put("middleBooked", middleBooked);
         availability.put("middleAvailable", middleAvailable);
@@ -258,6 +270,29 @@ public class BookingService {
 
         logger.info("Booking cancelled: {}, Refund: {}%",
             id, refundPercentage);
+
+        // Send cancellation email
+        try {
+            String emailTo = booking.getEmail() != null &&
+                !booking.getEmail().isEmpty() ?
+                booking.getEmail() :
+                booking.getUsername() + "@gmail.com";
+            notificationService.sendCancellationNotice(
+                booking.getUsername(),
+                emailTo,
+                booking.getFlightNumber(),
+                booking.getOrigin(),
+                booking.getDestination(),
+                booking.getBookingDate(),
+                refundAmount,
+                booking.getTotalPrice(),
+                refundPercentage);
+            logger.info("Cancellation email sent to: {}",
+                emailTo);
+        } catch (Exception e) {
+            logger.warn("Cancellation email failed: {}",
+                e.getMessage());
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Booking cancelled successfully!");

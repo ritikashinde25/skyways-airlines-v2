@@ -36,13 +36,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-
-        <!-- MongoDB -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-mongodb</artifactId>
-        </dependency>
-
+        
         <!-- Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -132,11 +126,16 @@
 
         <!--SendGrid API-->
         <dependency>
-    <groupId>com.sendgrid</groupId>
-    <artifactId>sendgrid-java</artifactId>
-    <version>4.10.1</version>
-</dependency>
+            <groupId>com.sendgrid</groupId>
+            <artifactId>sendgrid-java</artifactId>
+            <version>4.10.1</version>
+        </dependency>
 
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
+        </dependency>
     </dependencies>
 
     <build>

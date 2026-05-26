@@ -36,4 +36,5 @@ public class BookingDTO {
 
     private String travelClass;
     private String seatType;
+    private String email;
 }

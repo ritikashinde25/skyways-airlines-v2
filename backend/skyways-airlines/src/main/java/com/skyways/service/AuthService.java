@@ -30,7 +30,7 @@ public class AuthService {
     private final EncryptionConfig encryptionConfig;
 
     public String registerUser(UserDTO userDTO) {
-        logger.info("Registering new user: {}", 
+        logger.info("Registering new user: {}",
             userDTO.getUsername());
 
         Optional.ofNullable(userDTO.getUsername())
@@ -53,7 +53,6 @@ public class AuthService {
                 AppConstants.ERROR_DUPLICATE_EMAIL);
         }
 
-        // Encrypt password using 3-DES
         String encryptedPassword = encryptionConfig.encrypt(
             userDTO.getPassword());
         logger.info("Password encrypted for user: {}",
@@ -86,7 +85,6 @@ public class AuthService {
                     AppConstants.ERROR_USER_NOT_FOUND);
             });
 
-        // Decrypt stored password and compare
         String decryptedPassword = encryptionConfig.decrypt(
             user.getPassword());
 
@@ -105,6 +103,7 @@ public class AuthService {
                 .message(AppConstants.SUCCESS_LOGIN)
                 .token(token)
                 .username(user.getUsername())
+                .email(user.getEmail())
                 .build();
     }
 

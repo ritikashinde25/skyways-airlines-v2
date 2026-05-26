@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
+import { Subject } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { FlightService } from '../../services/flight';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-flight-search',
@@ -24,7 +26,6 @@ export class FlightSearchComponent implements OnInit {
   searched = false;
   username = localStorage.getItem('username') || '';
 
-  // Airport search results
   originAirports: any[] = [];
   destinationAirports: any[] = [];
   selectedOrigin: any = null;
@@ -32,59 +33,93 @@ export class FlightSearchComponent implements OnInit {
   showOriginDropdown = false;
   showDestinationDropdown = false;
 
+  private originSearch$ = new Subject<string>();
+  private destinationSearch$ = new Subject<string>();
+
   constructor(
     private flightService: FlightService,
     private router: Router
   ) {}
 
   ngOnInit() {
-    // Set default date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     this.travelDate = tomorrow.toISOString().split('T')[0];
-  }
 
-  searchOriginAirport() {
-    if (this.origin.length < 2) return;
-    this.flightService.searchAirport(this.origin).subscribe({
+    // Origin search with debounce
+    this.originSearch$.pipe(
+      debounceTime(1000),
+      distinctUntilChanged(),
+      switchMap(query => this.flightService.searchAirport(query))
+    ).subscribe({
       next: (data: any) => {
         this.originAirports = data.places || [];
-        this.showOriginDropdown = true;
+        this.showOriginDropdown = this.originAirports.length > 0;
       },
       error: () => {
         this.originAirports = [];
+        this.showOriginDropdown = false;
+      }
+    });
+
+    // Destination search with debounce
+    this.destinationSearch$.pipe(
+      debounceTime(1000),
+      distinctUntilChanged(),
+      switchMap(query => this.flightService.searchAirport(query))
+    ).subscribe({
+      next: (data: any) => {
+        this.destinationAirports = data.places || [];
+        this.showDestinationDropdown = 
+          this.destinationAirports.length > 0;
+      },
+      error: () => {
+        this.destinationAirports = [];
+        this.showDestinationDropdown = false;
       }
     });
   }
 
+  searchOriginAirport() {
+    this.selectedOrigin = null;
+    if (this.origin.length < 2) {
+      this.originAirports = [];
+      this.showOriginDropdown = false;
+      return;
+    }
+    this.originSearch$.next(this.origin);
+  }
+
   searchDestinationAirport() {
-    if (this.destination.length < 2) return;
-    this.flightService.searchAirport(this.destination).subscribe({
-      next: (data: any) => {
-        this.destinationAirports = data.places || [];
-        this.showDestinationDropdown = true;
-      },
-      error: () => {
-        this.destinationAirports = [];
-      }
-    });
+    this.selectedDestination = null;
+    if (this.destination.length < 2) {
+      this.destinationAirports = [];
+      this.showDestinationDropdown = false;
+      return;
+    }
+    this.destinationSearch$.next(this.destination);
   }
 
   selectOrigin(airport: any) {
     this.selectedOrigin = airport;
-    this.origin = airport.name + ' (' + airport.iataCode + ')';
+    this.origin = airport.name +
+      (airport.iataCode ? ' (' + airport.iataCode + ')' : '');
     this.showOriginDropdown = false;
+    this.originAirports = [];
   }
 
   selectDestination(airport: any) {
     this.selectedDestination = airport;
-    this.destination = airport.name + ' (' + airport.iataCode + ')';
+    this.destination = airport.name +
+      (airport.iataCode ? ' (' + airport.iataCode + ')' : '');
     this.showDestinationDropdown = false;
+    this.destinationAirports = [];
   }
 
   onSearch() {
     if (!this.selectedOrigin || !this.selectedDestination) {
-      this.message = 'Please select origin and destination airports!';
+      this.message =
+        'Please select origin and destination airports!';
       return;
     }
     if (!this.travelDate) {
@@ -115,7 +150,8 @@ export class FlightSearchComponent implements OnInit {
       },
       error: () => {
         this.isLoading = false;
-        this.message = 'Failed to search flights. Please try again!';
+        this.message =
+          'Failed to search flights. Please try again!';
       }
     });
   }
@@ -128,12 +164,14 @@ export class FlightSearchComponent implements OnInit {
     this.searched = false;
     this.selectedOrigin = null;
     this.selectedDestination = null;
+    this.originAirports = [];
+    this.destinationAirports = [];
   }
 
   onBook(flight: any) {
-    // Store flight data in localStorage for booking page
-    localStorage.setItem('selectedFlight', 
+    localStorage.setItem('selectedFlight',
       JSON.stringify(flight));
+    localStorage.setItem('travelDate', this.travelDate);
     this.router.navigate(['/booking', 'skyscanner']);
   }
 
